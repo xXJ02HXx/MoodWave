@@ -547,18 +547,18 @@ function applyPreset(presetName) {
 
 const TRACKS = 
 [
-  { label: "Snowed in",  src: "/Audio/1_Snowed_In.mp3" },           // COLD, MORNING
-  { label: "Cool Dawn",         src: "/Audio/2_Cool_Dawn.mp3"    }, // chilly Morning
-  { label: "Warm Morn",        src: "/Audio/3_Warm_Morn.mp3"    },      // warm Morning
-  { label: "Rise and Grind",      src: "/Audio/4_Rise_and_Grind.mp3"     },       // Hot Morning
-  { label: "Freezer Meals",         src: "/Audio/5_Freezer_Meals.mp3"    },     // Cold Noon
-  { label: "Sweater Weather",      src: "/Audio/6_Sweater_Weather.mp3"  },          // chilly Noon
-  { label: "Spacing Off",       src: "/Audio/7_Spacing_Off.mp3"  },         // warm Noon
-  { label: "Microwave Madness",    src: "/Audio/8_Microwave_Madness.mp3"   },           // Hot Noon
-  { label: "Title - CL",         src: "/Audio/Chill1.mp3"    },     // Cold Night
-  { label: "Title - cL",      src: "/Audio/Chill1.mp3"  },          // chilly Night
-  { label: "Title - hL",       src: "/Audio/Chill1.mp3"  },         // warm Night
-  { label: "Title - HL",    src: "/Audio/Chill1.mp3"   },           // Hot Night
+  { label: "Snowed in",               src: "/Audio/1_Snowed_In.mp3" },              // COLD, MORNING
+  { label: "Cool Dawn",               src: "/Audio/2_Cool_Dawn.mp3"    },           // chilly Morning
+  { label: "Warm Morn",               src: "/Audio/3_Warm_Morn.mp3"    },           // warm Morning
+  { label: "Rise and Grind",          src: "/Audio/4_Rise_and_Grind.mp3"     },     // Hot Morning
+  { label: "Freezer Meals",           src: "/Audio/5_Freezer_Meals.mp3"    },       // Cold Noon
+  { label: "Sweater Weather",         src: "/Audio/6_Sweater_Weather.mp3"  },       // chilly Noon
+  { label: "Spacing Off",             src: "/Audio/7_Spacing_Off.mp3"  },           // warm Noon
+  { label: "Microwave Madness",       src: "/Audio/8_Microwave_Madness.mp3"   },    // Hot Noon
+  { label: "Canarie in the Ice Mine", src: "/Audio/9_Canarie_in_the_Ice_Mine.mp3"}, // Cold Night
+  { label: "Journey to the Center of the Moon", src: "/Audio/10_Journey_to_the_Center_of_the_Moon.mp3"  },                  // chilly Night
+  { label: "Cave Base",               src: "/Audio/11_Cave_Base.mp3"  },                  // warm Night
+  { label: "Invisible Threat",              src: "/Audio/12_Invisible_Threat.mp3"   },                 // Hot Night
 ];
 
 function fileNameFromSrc(src) {
