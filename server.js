@@ -209,6 +209,16 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === "GET" && (req.url === "/dashboard" || req.url === "/dashboard.html")) {
+    serveFile(path.join(basePath, "dashboard.html"), res);
+    return;
+  }
+
+  if (req.method === "GET" && (req.url === "/test-lab" || req.url === "/test-lab.html")) {
+    serveFile(path.join(basePath, "test-lab.html"), res);
+    return;
+  }
+
   if (req.method === "GET" && req.url === "/api/session") {
     const current = getCurrentSession(req);
     if (!current) {

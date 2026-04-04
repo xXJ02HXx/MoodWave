@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoodWave | Live Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="nav-left">
+        <span class="nav-note">♪</span>
+        <a class="brand" href="/">MoodWave</a>
+        <span class="nav-note">♪</span>
+        <div class="nav-primary-links">
+          <a class="btn btn-filled btn-small" href="/dashboard">Live Dashboard</a>
+          <a class="btn btn-outline btn-small" href="/test-lab">Test Lab</a>
+        </div>
+      </div>
+      <div class="nav-right">
+        <a class="btn btn-outline" id="loginBtn" href="/login">Sign In</a>
+        <a class="btn btn-filled" href="/login">Sign Up</a>
+        <span class="session-user" id="sessionUser" style="display:none;"></span>
+        <button class="btn btn-outline" id="logoutBtn" style="display:none;" type="button">Logout</button>
+      </div>
+    </nav>
+
+    <header class="hero compact-hero">
+      <p class="hero-eyebrow">Live Sensor Stream</p>
+      <h1 class="hero-title compact-title">Live Dashboard</h1>
+      <p id="statusText" class="hero-status">Live mode: Placeholder sensor stream active.</p>
+    </header>
+
+    <section class="page-section" id="dashboard">
+      <div class="section-inner">
+        <div class="section-title-row">
+          <h2 class="section-title">Room Conditions</h2>
+          <span class="live-chip" id="eventTimer">Events updating live</span>
+        </div>
+        <p class="section-sub">Placeholder values. Each sensor can be toggled on or off.</p>
+
+        <div class="sensor-grid">
+          <article class="sensor-card" id="card-temperature">
+            <div class="sensor-head">
+              <h3>Temperature</h3>
+              <button class="toggle-btn" data-sensor="temperature" type="button">On</button>
+            </div>
+            <div class="sensor-value-row">
+              <span class="sensor-big" id="tempValue">--</span>
+              <span class="sensor-unit" id="tempUnit">°C</span>
+              <button class="unit-btn" id="unitToggleBtn" type="button">°F</button>
+            </div>
+            <p class="sensor-note">Detects heat stress, comfort, and room intensity.</p>
+          </article>
+
+          <article class="sensor-card" id="card-humidity">
+            <div class="sensor-head">
+              <h3>Humidity</h3>
+              <button class="toggle-btn" data-sensor="humidity" type="button">On</button>
+            </div>
+            <div class="sensor-value-row">
+              <span class="sensor-big" id="humidityValue">--</span>
+              <span class="sensor-unit">%</span>
+            </div>
+            <p class="sensor-note">Tracks dryness, stuffiness, and air heaviness.</p>
+          </article>
+
+          <article class="sensor-card" id="card-sound">
+            <div class="sensor-head">
+              <h3>Noise</h3>
+              <button class="toggle-btn" data-sensor="sound" type="button">On</button>
+            </div>
+            <div class="sensor-value-row">
+              <span class="sensor-big" id="soundValue">--</span>
+              <span class="sensor-unit">dB</span>
+            </div>
+            <p class="sensor-note">Measures how quiet or overwhelming the room feels.</p>
+          </article>
+
+          <article class="sensor-card" id="card-brightness">
+            <div class="sensor-head">
+              <h3>Light</h3>
+              <button class="toggle-btn" data-sensor="brightness" type="button">On</button>
+            </div>
+            <div class="sensor-value-row">
+              <span class="sensor-big" id="brightnessValue">--</span>
+              <span class="sensor-unit">lux</span>
+            </div>
+            <p class="sensor-note">Monitors whether the room is dim, balanced, or intense.</p>
+          </article>
+        </div>
+
+        <div class="dashboard-lower">
+          <div class="mood-card">
+            <p class="mood-label">Estimated Space Mood</p>
+            <p id="spaceMood" class="mood-value">Analyzing...</p>
+            <p class="mood-sub" id="spaceAdvice">Waiting for conditions...</p>
+            <div class="mini-stat-row">
+              <div class="mini-stat-item">
+                <span class="mini-label">Clock</span>
+                <strong id="dashboardClock">--:--:--</strong>
+              </div>
+              <div class="mini-stat-item">
+                <span class="mini-label">Time of Day</span>
+                <strong id="dayPhase">—</strong>
+              </div>
+              <div class="mini-stat-item">
+                <span class="mini-label">Room Condition</span>
+                <strong id="roomCondition">Balanced</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="log-card">
+            <div class="log-head">
+              <h3>Event Log</h3>
+              <span id="logCount">0 events</span>
+            </div>
+            <ul class="event-log" id="eventLog"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>MoodWave — Live Dashboard</p>
+    </footer>
+
+    <div class="music-player" id="musicPlayer">
+      <div class="player-inner">
+        <div class="player-note" id="playerNote">♪</div>
+        <div class="player-info">
+          <span class="player-label">Currently Playing</span>
+          <span class="player-track" id="playerTrack">Focused Pulse — Calm electronic focus</span>
+        </div>
+        <div class="player-btns">
+          <button class="player-btn" id="playerPlayBtn" type="button" title="Play / Pause">⏸</button>
+          <button class="player-btn" id="playerSkipBtn" type="button" title="Next">⏭</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

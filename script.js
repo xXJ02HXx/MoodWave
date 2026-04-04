@@ -40,6 +40,7 @@ const labGoalValue    = document.getElementById("labGoalValue");
 const labMusicStyle   = document.getElementById("labMusicStyle");
 const labEnergy       = document.getElementById("labEnergy");
 const goalButtons     = document.querySelectorAll(".goal-btn");
+const presetButtons   = document.querySelectorAll(".preset-btn");
 
 // Music player
 const playerTrack     = document.getElementById("playerTrack");
@@ -279,6 +280,35 @@ function updateLabOutput() {
   if (playerTrack) playerTrack.textContent = `${profile.title} — ${profile.style}`;
 }
 
+function applyPreset(presetName) {
+  if (!labTemp || !labLight || !labNoise || !labHumidity) return;
+
+  const presets = {
+    sauna:      { temperature: 42, light: 380, noise: 24, humidity: 82, goal: "relax" },
+    igloo:      { temperature: 2,  light: 700, noise: 12, humidity: 30, goal: "focus" },
+    massage:    { temperature: 27, light: 170, noise: 18, humidity: 55, goal: "meditate" },
+    library:    { temperature: 22, light: 450, noise: 16, humidity: 42, goal: "study" },
+    coffee:     { temperature: 24, light: 520, noise: 56, humidity: 48, goal: "focus" },
+    nightclub:  { temperature: 31, light: 120, noise: 88, humidity: 64, goal: "workout" }
+  };
+
+  const preset = presets[presetName];
+  if (!preset) return;
+
+  labTemp.value = String(preset.temperature);
+  labLight.value = String(preset.light);
+  labNoise.value = String(preset.noise);
+  labHumidity.value = String(preset.humidity);
+  selectedGoal = preset.goal;
+
+  goalButtons.forEach((b) => {
+    b.classList.toggle("active", b.dataset.goal === selectedGoal);
+  });
+
+  addEvent(`Preset applied: ${presetName}`);
+  updateLabOutput();
+}
+
 // ─────────────────────────────────────────────
 // MUSIC PLAYER
 // ─────────────────────────────────────────────
@@ -372,6 +402,13 @@ goalButtons.forEach((btn) => {
     goalButtons.forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     updateLabOutput();
+  });
+});
+
+presetButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const presetName = btn.dataset.preset;
+    applyPreset(presetName);
   });
 });
 

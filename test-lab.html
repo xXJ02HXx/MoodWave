@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoodWave | Test Lab</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="nav-left">
+        <span class="nav-note">♪</span>
+        <a class="brand" href="/">MoodWave</a>
+        <span class="nav-note">♪</span>
+        <div class="nav-primary-links">
+          <a class="btn btn-outline btn-small" href="/dashboard">Live Dashboard</a>
+          <a class="btn btn-filled btn-small" href="/test-lab">Test Lab</a>
+        </div>
+      </div>
+      <div class="nav-right">
+        <a class="btn btn-outline" id="loginBtn" href="/login">Sign In</a>
+        <a class="btn btn-filled" href="/login">Sign Up</a>
+        <span class="session-user" id="sessionUser" style="display:none;"></span>
+        <button class="btn btn-outline" id="logoutBtn" style="display:none;" type="button">Logout</button>
+      </div>
+    </nav>
+
+    <header class="hero compact-hero">
+      <p class="hero-eyebrow">Room Simulation Controls</p>
+      <h1 class="hero-title compact-title">Test Lab</h1>
+      <p id="statusText" class="hero-status">Try presets or custom sliders to simulate different spaces.</p>
+    </header>
+
+    <section class="page-section" id="test-lab">
+      <div class="section-inner">
+        <div class="section-title-row">
+          <h2 class="section-title">Preset Rooms + Manual Controls</h2>
+        </div>
+        <p class="section-sub">Pick a preset (Sauna, Igloo, etc.) and MoodWave will auto-set sliders.</p>
+
+        <div class="preset-row" id="presetButtons">
+          <button class="preset-btn" data-preset="sauna" type="button">Sauna</button>
+          <button class="preset-btn" data-preset="igloo" type="button">Igloo</button>
+          <button class="preset-btn" data-preset="massage" type="button">Massage Parlor</button>
+          <button class="preset-btn" data-preset="library" type="button">Library</button>
+          <button class="preset-btn" data-preset="coffee" type="button">Coffee Shop</button>
+          <button class="preset-btn" data-preset="nightclub" type="button">Night Club</button>
+        </div>
+
+        <div class="lab-wrap" id="labWrap">
+          <div class="lab-controls">
+            <label class="slider-row">
+              <div class="slider-label-row">
+                <span>Temperature</span>
+                <strong id="labTempDisplay">23°C / 73°F</strong>
+              </div>
+              <input id="labTemp" type="range" min="0" max="50" value="23" />
+              <div class="slider-extremes"><span>0°C Freezing</span><span>50°C Burning</span></div>
+            </label>
+
+            <label class="slider-row">
+              <div class="slider-label-row">
+                <span>Lighting</span>
+                <strong id="labLightValue">420 lux</strong>
+              </div>
+              <input id="labLight" type="range" min="0" max="1000" value="420" />
+              <div class="slider-extremes"><span>Pitch dark</span><span>Blazing bright</span></div>
+            </label>
+
+            <label class="slider-row">
+              <div class="slider-label-row">
+                <span>Noise</span>
+                <strong id="labNoiseValue">Quiet</strong>
+              </div>
+              <input id="labNoise" type="range" min="0" max="100" value="22" />
+              <div class="slider-extremes"><span>Silent</span><span>RAVE!</span></div>
+            </label>
+
+            <label class="slider-row">
+              <div class="slider-label-row">
+                <span>Humidity</span>
+                <strong id="labHumidityValue">48%</strong>
+              </div>
+              <input id="labHumidity" type="range" min="10" max="90" value="48" />
+              <div class="slider-extremes"><span>Bone dry</span><span>Tropical swamp</span></div>
+            </label>
+
+            <div class="goal-panel">
+              <p>Choose your goal</p>
+              <div class="goal-buttons" id="goalButtons">
+                <button class="goal-btn active" data-goal="study" type="button">Study</button>
+                <button class="goal-btn" data-goal="relax" type="button">Relax</button>
+                <button class="goal-btn" data-goal="focus" type="button">Focus</button>
+                <button class="goal-btn" data-goal="meditate" type="button">Meditate</button>
+                <button class="goal-btn" data-goal="workout" type="button">Workout</button>
+                <button class="goal-btn" data-goal="irritate" type="button">Irritate</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="lab-output" id="labOutputBox">
+            <p class="eyebrow">Generated Music Response</p>
+            <h3 id="labMusicTitle">Focused Pulse</h3>
+            <p id="labMusicSummary">Balanced temperature, moderate brightness, and low noise produce clean rhythmic focus layers.</p>
+            <div class="output-grid">
+              <div>
+                <span class="output-label">Room Type</span>
+                <strong id="labRoomType">Balanced Work Room</strong>
+              </div>
+              <div>
+                <span class="output-label">Goal</span>
+                <strong id="labGoalValue">Study</strong>
+              </div>
+              <div>
+                <span class="output-label">Music Style</span>
+                <strong id="labMusicStyle">Calm electronic focus</strong>
+              </div>
+              <div>
+                <span class="output-label">Energy</span>
+                <strong id="labEnergy">Medium</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>MoodWave — Test Lab</p>
+    </footer>
+
+    <div class="music-player" id="musicPlayer">
+      <div class="player-inner">
+        <div class="player-note" id="playerNote">♪</div>
+        <div class="player-info">
+          <span class="player-label">Currently Playing</span>
+          <span class="player-track" id="playerTrack">Focused Pulse — Calm electronic focus</span>
+        </div>
+        <div class="player-btns">
+          <button class="player-btn" id="playerPlayBtn" type="button" title="Play / Pause">⏸</button>
+          <button class="player-btn" id="playerSkipBtn" type="button" title="Next">⏭</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
