@@ -228,11 +228,19 @@ function renderData(temperature, humidity, sound, brightness)
   updateReverbFromBrightness(brightness);
 }
 
-function updateReverbFromBrightness(brightness) {
-  if (!audioCtx || !playerPlaying) return;
+function updateReverbFromBrightness(brightness) 
+{
+  if (!audioCtx) return;
+
   // bright room = dry, dark room = wet
-  const wetAmount = 1 - Math.min(brightness / 600, 1); // 0 at 600+ lux, 1 at 0 lux
-  setReverb(activeSlot, wetAmount);
+  const wetAmount = 1 - Math.min(brightness / 600, 1);
+
+  // Apply to BOTH slots — whichever is audible gets the correct reverb
+  slot.forEach((s, idx) => {
+    if (s.source) {        // only bother if this slot is actually running
+      setReverb(idx, wetAmount);
+    }
+  });
 }
 
 window.renderData = renderData;
@@ -602,7 +610,8 @@ const bufferCache = new Map();
 
 // Lazily create (or return) the AudioContext and GainNodes.
 // Must not be called before a user gesture.
-function getAudioCtx() {
+function getAudioCtx() 
+{
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     masterGain = audioCtx.createGain();
@@ -629,7 +638,9 @@ function getAudioCtx() {
   return audioCtx;
 }
 
-async function loadBuffer(src) {
+// load mp3 into the buffer
+async function loadBuffer(src) 
+{
   if (bufferCache.has(src)) return bufferCache.get(src);
   const res    = await fetch(src);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${src}`);
@@ -639,7 +650,7 @@ async function loadBuffer(src) {
   return buffer;
 }
 
-
+// terminates file in a slot
 function stopSlot(idx) 
 {
   const s = slot[idx];
