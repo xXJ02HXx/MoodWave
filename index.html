@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MoodWave | Adaptive Space Intelligence</title>
+    <title>MoodWave</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -29,15 +29,14 @@
 
     <!-- ───── HERO (always visible) ───── -->
     <header class="hero" id="heroSection">
-      <p class="hero-eyebrow">♪ Adaptive Space Intelligence ♪</p>
+      <p class="hero-eyebrow">Real-time room audio response</p>
       <h1 class="hero-title">MoodWave</h1>
       <p class="hero-slogan">Why read the room when we can do it for you?</p>
-      <p id="statusText" class="hero-status">Live mode: Placeholder sensor stream active.</p>
+      <p id="statusText" class="hero-status">MoodWave adjusts music to match your current room conditions.</p>
       <div class="hero-cta-row">
         <button class="btn btn-hover-only hero-btn" data-panel="what" type="button">What Is It</button>
         <button class="btn btn-hover-only hero-btn" data-panel="science" type="button">Science + How It Works</button>
         <button class="btn btn-hover-only hero-btn" data-panel="why" type="button">Why It Matters</button>
-        <button class="btn btn-hover-only hero-btn" data-panel="account" type="button">Account Benefits</button>
       </div>
     </header>
 
@@ -47,13 +46,11 @@
       <div class="content-panel active" id="panel-what" data-panel="what">
         <div class="section-inner">
           <div class="info-card info-card--accent">
-            <div class="info-icon">♪</div>
             <h2>What is MoodWave?</h2>
             <p>
-              MoodWave is an adaptive environment system that uses a real Arduino sensor board to
-              measure your room's temperature, humidity, noise level, and brightness, then turns
-              those readings into a living music response matched to how the space actually feels.
-              No guessing. No timers. The room tells MoodWave what it needs and MoodWave plays it.
+              MoodWave reads your room in real time using temperature, humidity, noise, and light sensors.
+              It then picks music based on those readings to help increase productivity, lower stress,
+              and support creativity throughout the day.
             </p>
           </div>
         </div>
@@ -63,27 +60,18 @@
       <div class="content-panel" id="panel-science" data-panel="science">
         <div class="section-inner">
           <div class="info-card info-card--accent">
-            <div class="info-icon">♪</div>
             <h2>The Science + How MoodWave Works</h2>
             <p>
-              Research in environmental psychology shows that temperature, light, sound pressure,
-              and humidity all directly influence attention span, stress hormones, creative output,
-              and physical energy. MoodWave maps those four signals onto a mood model, classifies
-              the room condition, and selects a music profile engineered to support — or counteract —
-              what the environment is doing to the people inside it.
+              Your environment affects your body and attention.
+              Heat, humidity, brightness, and noise can change stress, energy, and focus.
+              MoodWave watches those signals and adjusts the music response to keep the room in a better range.
             </p>
-            <div class="sci-chips">
-              <div class="sci-chip">🌡️ Temperature → Energy &amp; Fatigue</div>
-              <div class="sci-chip">💧 Humidity → Heaviness &amp; Comfort</div>
-              <div class="sci-chip">🔊 Noise → Overload or Drive</div>
-              <div class="sci-chip">💡 Brightness → Focus or Calm</div>
-            </div>
             <ol class="how-list">
-              <li>An <strong>Arduino sensor board</strong> reads temperature, humidity, noise, and brightness in real time.</li>
-              <li><strong>Python</strong> ingests and cleans the raw sensor stream.</li>
-              <li><strong>JavaScript</strong> updates the live dashboard every few seconds.</li>
-              <li>MoodWave <strong>classifies the room</strong> — hot and stuffy, overstimulated, dim and quiet, bright and alert, or balanced.</li>
-              <li>The <strong>music engine</strong> picks the best ambient profile for your chosen goal.</li>
+              <li>The Arduino board reads temperature, humidity, noise, and light in real time.</li>
+              <li>Python cleans the stream and computes live metrics.</li>
+              <li>The dashboard updates instantly in the browser.</li>
+              <li>MoodWave tags the room state based on the current conditions.</li>
+              <li>The music system picks a fitting track for your goal and context.</li>
             </ol>
           </div>
         </div>
@@ -93,43 +81,12 @@
       <div class="content-panel" id="panel-why" data-panel="why">
         <div class="section-inner">
           <div class="info-card info-card--accent">
-            <div class="info-icon">♪</div>
             <h2>Why Does It Matter?</h2>
             <p>
-              Your environment makes decisions before you do. A hot, stuffy room drains focus.
-              A loud, chaotic room spikes cortisol. A dim, quiet room can numb motivation or invite
-              deep rest. MoodWave measures all of that and responds with sound — the one environmental
-              lever that never requires you to leave your chair.
+              Most people try to force focus while the room works against them.
+              MoodWave helps by responding to the room first, then shaping sound to support what you are trying to do.
+              It is a practical way to make your space feel more usable without changing hardware every time.
             </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Account Benefits Panel -->
-      <div class="content-panel" id="panel-account" data-panel="account">
-        <div class="section-inner">
-          <div class="account-section">
-            <div class="account-title-bar">
-              <h2>Account Benefits</h2>
-              <p>Get more from MoodWave with a personal account</p>
-            </div>
-            <div class="account-grid">
-              <div class="account-card">
-                <div class="account-icon">🎯</div>
-                <h3>Save Goals</h3>
-                <p>Store study, relax, focus, meditate, workout, or intensity preferences so MoodWave always knows what you are aiming for.</p>
-              </div>
-              <div class="account-card">
-                <div class="account-icon">📊</div>
-                <h3>History Insight</h3>
-                <p>Review your past room patterns and see what conditions helped your focus, energy, and recovery the most.</p>
-              </div>
-              <div class="account-card">
-                <div class="account-icon">🎵</div>
-                <h3>Personal Music Response</h3>
-                <p>MoodWave learns which audio profiles work for you specifically and adjusts over time.</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -137,13 +94,12 @@
 
     <!-- ───── FOOTER ───── -->
     <footer class="footer">
-      <p>MoodWave — Adaptive Space Intelligence | Local demo with live sensor simulation and account system.</p>
+      <p>MoodWave | Local demo with live sensor simulation and account system.</p>
     </footer>
 
     <!-- ───── MUSIC PLAYER ───── -->
     <div class="music-player" id="musicPlayer">
       <div class="player-inner">
-        <div class="player-note" id="playerNote">♪</div>
         <div class="player-info">
           <span class="player-label">Currently Playing</span>
           <span class="player-track" id="playerTrack">Chill1.mp3</span>
