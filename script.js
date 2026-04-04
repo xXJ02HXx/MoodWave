@@ -1112,4 +1112,3 @@ if (isDashboardPage) {
   if (statusText) statusText.textContent = "Live mode: Connecting to Arduino stream...";
   startDashboardStream();
 }
-

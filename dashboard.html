@@ -139,9 +139,7 @@
 
         <div class="dashboard-lower">
           <div class="mood-card">
-            <p class="mood-label">Estimated Space Mood</p>
-            <p id="spaceMood" class="mood-value">Analyzing...</p>
-            <p class="mood-sub" id="spaceAdvice">Waiting for conditions...</p>
+            <p class="mood-label">Time</p>
             <div class="mini-stat-row">
               <div class="mini-stat-item">
                 <span class="mini-label">Clock</span>
@@ -153,7 +151,7 @@
               </div>
               <div class="mini-stat-item">
                 <span class="mini-label">Room Condition</span>
-                <strong id="roomCondition">Balanced</strong>
+                <strong id="roomCondition">Checking humidity...</strong>
               </div>
             </div>
           </div>
@@ -171,7 +169,7 @@
         <div class="analytics-grid">
 
           <div class="analytics-card">
-            <h4>🧠 Room Scores</h4>
+            <h4>Room Scores</h4>
             <div class="score-bar-wrap">
               <div class="score-bar-label"><span>Comfort Score</span><span id="comfortVal">--</span></div>
               <div class="score-bar"><div class="score-bar-fill" id="comfortBar" style="width:0%"></div></div>
@@ -195,7 +193,7 @@
           </div>
 
           <div class="analytics-card">
-            <h4>🌡 Temperature Detail</h4>
+            <h4>Temperature Detail</h4>
             <div class="stat-row"><span class="stat-label">Temp (°C)</span><span class="stat-value" id="aTempC">--</span></div>
             <div class="stat-row"><span class="stat-label">Temp (°F)</span><span class="stat-value" id="aTempF">--</span></div>
             <div class="stat-row"><span class="stat-label">Dew Point (°C)</span><span class="stat-value" id="aDewC">--</span></div>
@@ -207,7 +205,7 @@
           </div>
 
           <div class="analytics-card">
-            <h4>💧 Humidity Detail</h4>
+            <h4>Humidity Detail</h4>
             <div class="stat-row"><span class="stat-label">Relative Humidity</span><span class="stat-value" id="aRh">--</span></div>
             <div class="stat-row"><span class="stat-label">Abs. Humidity (g/m³)</span><span class="stat-value" id="aAbsH">--</span></div>
             <div class="stat-row"><span class="stat-label">Humidity Ratio</span><span class="stat-value" id="aHumRatio">--</span></div>
@@ -218,19 +216,18 @@
           </div>
 
           <div class="analytics-card">
-            <h4>💡 Light & Noise Detail</h4>
+            <h4>Light & Noise Detail</h4>
             <div class="stat-row"><span class="stat-label">Light Raw (ADC)</span><span class="stat-value" id="aLightRaw">--</span></div>
             <div class="stat-row"><span class="stat-label">Light Voltage</span><span class="stat-value" id="aLightV">--</span></div>
             <div class="stat-row"><span class="stat-label">Light Relative %</span><span class="stat-value" id="aBrightPct">--</span></div>
             <div class="stat-row"><span class="stat-label">Light Std Dev</span><span class="stat-value" id="aLightStd">--</span></div>
             <div class="stat-row"><span class="stat-label">Light Rate of Change</span><span class="stat-value" id="aDlightDt">--</span></div>
-            <div class="stat-row"><span class="stat-label">Noise P2P (smoothed)</span><span class="stat-value" id="aNoiseP2p">--</span></div>
             <div class="stat-row"><span class="stat-label">Noise Relative %</span><span class="stat-value" id="aNoiseStd">--</span></div>
             <div class="stat-row"><span class="stat-label">Noise Rate of Change</span><span class="stat-value" id="aDnoiseDt">--</span></div>
           </div>
 
           <div class="analytics-card">
-            <h4>⚙️ Sensor Health</h4>
+            <h4>Sensor Health</h4>
             <div class="stat-row"><span class="stat-label">Light Sensor</span><span class="stat-value" id="errLight">--</span></div>
             <div class="stat-row"><span class="stat-label">Microphone</span><span class="stat-value" id="errMic">--</span></div>
             <div class="stat-row"><span class="stat-label">DHT (Temp/Humidity)</span><span class="stat-value" id="errDht">--</span></div>
@@ -321,7 +318,6 @@
     document.getElementById("aBrightPct").textContent = val(lightRelPct, " %");
     document.getElementById("aLightStd").textContent  = val(d.light_std);
     document.getElementById("aDlightDt").textContent  = val(d.dlight_dt, " /s");
-    document.getElementById("aNoiseP2p").textContent  = val(d.noise_p2p);
     document.getElementById("aNoiseStd").textContent  = val(noiseRelPct, " %");
     document.getElementById("aDnoiseDt").textContent  = val(d.dnoise_dt, " /s");
 
@@ -396,15 +392,18 @@
           );
         }
 
-        const moodEl = document.getElementById("spaceMood");
-        const adviceEl = document.getElementById("spaceAdvice");
         const conditionEl = document.getElementById("roomCondition");
-        if (moodEl && d.room_state) moodEl.textContent = d.room_state;
-        if (adviceEl && d.conclusion) adviceEl.textContent = d.conclusion;
         if (conditionEl) {
-          const thermal = d.thermal_label || "--";
-          const moisture = d.moisture_label || "--";
-          conditionEl.textContent = `${thermal} • ${moisture}`;
+          const humidity = Number(d.humidity_pct);
+          if (!Number.isFinite(humidity)) {
+            conditionEl.textContent = "Checking humidity...";
+          } else if (humidity < 35) {
+            conditionEl.textContent = "Dry";
+          } else if (humidity <= 60) {
+            conditionEl.textContent = "Normal";
+          } else {
+            conditionEl.textContent = "Higher than normal";
+          }
         }
 
         updateAnalytics(d);

@@ -619,9 +619,32 @@ body {
   outline-offset: 2px;
 }
 
+.lab-suggestion-bar {
+  margin: 4px 0 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.lab-suggestion-bar p {
+  margin: 0;
+  color: #e8f5ff;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.lab-suggestion-bar p span {
+  color: var(--muted);
+}
+
+.lab-suggestion-bar p strong {
+  color: var(--accent-soft);
+  text-decoration: underline;
+}
+
 .lab-wrap {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
 }
 
@@ -955,8 +978,8 @@ body {
 }
 
 .test-lab-page .music-player {
-  top: auto;
-  bottom: 20px;
+  top: 82px;
+  bottom: auto;
   right: 20px;
 }
 
@@ -1311,9 +1334,9 @@ body {
     font-size: clamp(3rem, 18vw, 5rem);
   }
   .music-player {
-    bottom: 10px;
+    top: 82px;
     right: 10px;
-    left: 10px;
-    width: auto;
+    left: auto;
+    width: min(380px, calc(100vw - 20px));
   }
 }
