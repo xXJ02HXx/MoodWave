@@ -3,9 +3,13 @@ const loginMessage = document.getElementById("loginMessage");
 const loginModeBtn = document.getElementById("loginModeBtn");
 const registerModeBtn = document.getElementById("registerModeBtn");
 const submitBtn = document.getElementById("submitBtn");
+// Detect if the page is opened directly as a file (file://) rather than through the server.
+// This happens when someone double-clicks the HTML file. We redirect them to the real server.
 const isFilePreview = window.location.protocol === "file:";
 let mode = "login";
 
+// Switch the form between 'login' and 'register' modes.
+// Changes the button label and highlights the active tab.
 function setMode(nextMode) {
   mode = nextMode;
   if (submitBtn) {
@@ -26,6 +30,8 @@ if (isFilePreview) {
   window.location.href = "http://localhost:3000/login";
 }
 
+// Ask the server if there's already a valid session cookie.
+// If the user is already logged in, skip this page and go straight to the home page.
 async function checkExistingSession() {
   try {
     const response = await fetch("/api/session");
@@ -51,6 +57,7 @@ if (registerModeBtn) {
 }
 
 if (authForm && loginMessage) {
+  // Intercept the form submit so we can send it as JSON to the API instead of a normal page reload.
   authForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 

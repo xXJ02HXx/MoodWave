@@ -10,8 +10,12 @@ const COOKIE_NAME = "moodwave_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+// When both Supabase env vars are set, accounts are stored in the cloud DB.
+// Otherwise they're stored locally in users.json (good for dev/local testing).
 const USE_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
 
+// In-memory session store. Fast and simple, but resets every server restart.
+// Each entry maps a random session ID to a username + expiry time.
 const sessions = new Map();
 
 const mimeTypes = {
@@ -114,6 +118,8 @@ function readBody(req) {
   });
 }
 
+// scrypt is intentionally slow to compute, making brute-force cracking impractical.
+// The salt is a random 16 bytes so the same password gives a different hash each time.
 function hashPassword(password, saltHex) {
   return crypto.scryptSync(password, Buffer.from(saltHex, "hex"), 64).toString("hex");
 }
@@ -124,6 +130,8 @@ function verifyPassword(password, saltHex, expectedHashHex) {
   if (actual.length !== expected.length) {
     return false;
   }
+  // timingSafeEqual compares every byte in constant time, preventing attackers from
+  // using response speed to figure out how many bytes matched.
   return crypto.timingSafeEqual(actual, expected);
 }
 
@@ -339,6 +347,8 @@ const server = http.createServer((req, res) => {
   }
 
   const requestedPath = req.url || "/";
+  // Prevent path traversal attacks (e.g. "/../../etc/passwd") by normalising the
+  // URL and rejecting anything that still starts with a parent-directory segment.
   const safePath = path.normalize(requestedPath).replace(/^\.\.(\\|\/|$)/, "");
   const filePath = path.join(basePath, safePath);
   serveFile(filePath, res);

@@ -88,13 +88,12 @@
           <h2 class="section-title">Room Conditions</h2>
           <span class="live-chip" id="eventTimer">Events updating live</span>
         </div>
-        <p class="section-sub">Live Arduino data. Each sensor can be toggled on or off.</p>
+        <p class="section-sub">Live Arduino data from the room sensors.</p>
 
         <div class="sensor-grid">
           <article class="sensor-card" id="card-temperature">
             <div class="sensor-head">
               <h3>Temperature</h3>
-              <button class="toggle-btn" data-sensor="temperature" type="button">On</button>
             </div>
             <div class="sensor-value-row">
               <span class="sensor-big" id="tempValue">--</span>
@@ -107,7 +106,6 @@
           <article class="sensor-card" id="card-humidity">
             <div class="sensor-head">
               <h3>Humidity</h3>
-              <button class="toggle-btn" data-sensor="humidity" type="button">On</button>
             </div>
             <div class="sensor-value-row">
               <span class="sensor-big" id="humidityValue">--</span>
@@ -119,7 +117,6 @@
           <article class="sensor-card" id="card-sound">
             <div class="sensor-head">
               <h3>Noise</h3>
-              <button class="toggle-btn" data-sensor="sound" type="button">On</button>
             </div>
             <div class="sensor-value-row">
               <span class="sensor-big" id="soundValue">--</span>
@@ -131,7 +128,6 @@
           <article class="sensor-card" id="card-brightness">
             <div class="sensor-head">
               <h3>Light</h3>
-              <button class="toggle-btn" data-sensor="brightness" type="button">On</button>
             </div>
             <div class="sensor-value-row">
               <span class="sensor-big" id="brightnessValue">--</span>
@@ -379,11 +375,11 @@
         const soundEl = document.getElementById("soundValue");
         const soundUnit = document.getElementById("soundUnit");
 
-        if (soundEl && window.sensorState.sound) {
-          soundEl.textContent = sound !== null ? sound.toFixed(1) : "--";
+        if (soundEl) {
+          soundEl.textContent = sound !== null ? noiseLabel(sound) : "--";
         }
         if (soundUnit) {
-          soundUnit.textContent = "p2p";
+          soundUnit.textContent = ""; // label is already human-readable, no unit needed
         }
 
         if (

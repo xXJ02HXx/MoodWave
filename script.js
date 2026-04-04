@@ -21,7 +21,6 @@ const spaceAdvice     = document.getElementById("spaceAdvice");
 const eventLog        = document.getElementById("eventLog");
 const logCount        = document.getElementById("logCount");
 const eventTimer      = document.getElementById("eventTimer");
-const toggleButtons   = document.querySelectorAll(".toggle-btn");
 const unitToggleBtn   = document.getElementById("unitToggleBtn");
 const tempCard        = document.getElementById("card-temperature");
 
@@ -60,18 +59,19 @@ const events = [];
 let selectedGoal   = "study";
 let showFahrenheit = false;
 let selectedLabTimeOfDay = "Midday";
-let isMuted = true;
+let isMuted = true; // Start muted — browsers block autoplay with sound, so we unmute only after a user gesture.
 let landingTrackIndex = 0;
-const isTestLabPage = Boolean(document.getElementById("test-lab"));
+// Detect which page we're on. script.js is shared, so we check for landmark elements.
+const isTestLabPage   = Boolean(document.getElementById("test-lab"));
 const isDashboardPage = Boolean(document.getElementById("dashboardClock"));
-const isLandingPage = Boolean(document.getElementById("heroSection")) && !isTestLabPage && !isDashboardPage;
+const isLandingPage   = Boolean(document.getElementById("heroSection")) && !isTestLabPage && !isDashboardPage;
+// Landing page uses a plain <audio> element; other pages use the Web Audio API for crossfading.
 const landingPageAudio = isLandingPage ? new Audio("/Audio/Chill1.mp3") : null;
 
-// Expose dashboard state/hooks for teammate integration.
+// Expose state globally — dashboard.html's inline script uses these to push sensor updates.
 window.sensorState = sensorState;
 window.latestSensorValues = latestSensorValues;
 window.ws = null;
-window._placeholderInterval = null;
 
 if (landingPageAudio) {
   landingPageAudio.loop = true;
@@ -105,6 +105,8 @@ function applyTempStyling(celsius) {
 
 // ─────────────────────────────────────────────
 // MOOD / CONDITION INFERENCE
+// Reads the four sensor values and returns a human-readable label.
+// These are used by the dashboard and test lab to describe the room.
 // ─────────────────────────────────────────────
 function inferMood(temperature, humidity, sound, brightness) {
   if (sound > 65 || temperature > 28) return "High Energy";
@@ -184,6 +186,8 @@ function getTrackIndex(time, temp) {
 
 // ─────────────────────────────────────────────
 // RENDER SENSOR DATA
+// Called every time new values arrive (WebSocket message or slider change).
+// Updates the UI cards, mood labels, track selection, and reverb level.
 // ─────────────────────────────────────────────
 function renderData(temperature, humidity, sound, brightness) 
 {
@@ -194,24 +198,19 @@ function renderData(temperature, humidity, sound, brightness)
 
   const temp = getTempTrackBand(temperature);
 
-
   if (tempValueEl) {
-    if (sensorState.temperature) {
-      tempValueEl.textContent = showFahrenheit
-        ? cToF(temperature).toFixed(1)
-        : temperature.toFixed(1);
-    } else {
-      tempValueEl.textContent = "OFF";
-    }
+    tempValueEl.textContent = showFahrenheit
+      ? cToF(temperature).toFixed(1)
+      : temperature.toFixed(1);
   }
   if (tempUnitEl)    tempUnitEl.textContent    = showFahrenheit ? "°F" : "°C";
   if (unitToggleBtn) unitToggleBtn.textContent = showFahrenheit ? "°C" : "°F";
 
-  if (sensorState.temperature) applyTempStyling(temperature);
+  applyTempStyling(temperature);
 
-  if (humidityValue)   humidityValue.textContent   = sensorState.humidity   ? humidity.toFixed(0)   : "OFF";
-  if (soundValue)      soundValue.textContent       = sensorState.sound      ? sound.toFixed(0)      : "OFF";
-  if (brightnessValue) brightnessValue.textContent  = sensorState.brightness ? brightness.toFixed(0) : "OFF";
+  if (humidityValue)   humidityValue.textContent   = humidity.toFixed(0);
+  if (soundValue)      soundValue.textContent       = noiseLabel(sound);
+  if (brightnessValue) brightnessValue.textContent  = brightness.toFixed(0);
 
   const mood      = inferMood(temperature, humidity, sound, brightness);
   const condition = inferRoomCondition(temperature, humidity, sound, brightness);
@@ -221,8 +220,6 @@ function renderData(temperature, humidity, sound, brightness)
   if (spaceAdvice)   spaceAdvice.textContent   = inferAdvice(condition, mood);
 
   const time = getTrackTimeIndex(getDayPhaseLabel(new Date().getHours()));
-
-  
 
   updatePlayerTrack(time, temp);
   updateReverbFromBrightness(brightness);
@@ -243,94 +240,6 @@ function updateReverbFromBrightness(brightness)
 }
 
 window.renderData = renderData;
-
-// ─────────────────────────────────────────────
-// PLACEHOLDER DATA GENERATOR
-// ─────────────────────────────────────────────
-function generatePlaceholderData() {
-  const temperature = sensorState.temperature ? 20 + Math.random() * 14   : latestSensorValues.temperature;
-  const humidity    = sensorState.humidity    ? 35 + Math.random() * 32   : latestSensorValues.humidity;
-  const sound       = sensorState.sound       ? 28 + Math.random() * 52   : latestSensorValues.sound;
-  const brightness  = sensorState.brightness  ? 100 + Math.random() * 760 : latestSensorValues.brightness;
-  renderData(temperature, humidity, sound, brightness);
-  if (eventTimer) eventTimer.textContent = `Updated ${new Date().toLocaleTimeString()}`;
-}
-
-function extractSensorValue(payload, keys, fallback) {
-  for (const key of keys) {
-    if (payload[key] !== undefined && payload[key] !== null && !Number.isNaN(Number(payload[key]))) {
-      return Number(payload[key]);
-    }
-  }
-  return fallback;
-}
-
-function startDashboardStream() {
-  if (!isDashboardPage) return;
-
-  const wsUrl = "ws://localhost:8000/ws";
-  try {
-    const ws = new WebSocket(wsUrl);
-    window.ws = ws;
-
-    ws.addEventListener("open", () => {
-      if (statusText) statusText.textContent = "Live mode: Arduino stream connected.";
-      addEvent("Arduino stream connected");
-    });
-
-    ws.addEventListener("message", (event) => {
-      let data;
-      try {
-        data = JSON.parse(event.data);
-      } catch (_) {
-        return;
-      }
-
-      const temperature = extractSensorValue(data, ["temp_c", "temperature", "temp"], latestSensorValues.temperature);
-      const humidity = extractSensorValue(data, ["humidity_pct", "humidity", "rh"], latestSensorValues.humidity);
-      const sound = extractSensorValue(data, ["noise_p2p", "noise", "sound"], latestSensorValues.sound);
-      const brightness = extractSensorValue(data, ["light_raw", "brightness", "light"], latestSensorValues.brightness);
-
-      if (soundValue && sensorState.sound) {
-        soundValue.textContent = sound.toFixed(0);
-        const soundUnit = document.getElementById("soundUnit");
-        if (soundUnit) soundUnit.textContent = "dB";
-      }
-
-      renderData(temperature, humidity, sound, brightness);
-      if (eventTimer) eventTimer.textContent = `Updated ${new Date().toLocaleTimeString()}`;
-    });
-
-    ws.addEventListener("close", () => {
-      if (statusText) statusText.textContent = "Live mode: Stream disconnected. Waiting to reconnect...";
-      addEvent("Arduino stream disconnected");
-    });
-
-    ws.addEventListener("error", () => {
-      if (statusText) statusText.textContent = "Live mode: Waiting for Arduino stream...";
-    });
-  } catch (_) {
-    if (statusText) statusText.textContent = "Live mode: Waiting for Arduino stream...";
-  }
-}
-
-// ─────────────────────────────────────────────
-// SENSOR CARD TOGGLE STATE
-// ─────────────────────────────────────────────
-function updateSensorCardState() {
-  Object.entries(sensorState).forEach(([sensor, active]) => {
-    const button = document.querySelector(`.toggle-btn[data-sensor="${sensor}"]`);
-    const card   = document.getElementById(`card-${sensor}`);
-    if (button) {
-      button.textContent = active ? "On" : "Off";
-      button.classList.toggle("toggle-off", !active);
-    }
-    if (card) card.classList.toggle("sensor-off", !active);
-    if (sensor === "temperature" && !active && tempCard) {
-      TEMP_CLASSES.forEach((c) => tempCard.classList.remove(c));
-    }
-  });
-}
 
 // ─────────────────────────────────────────────
 // TEST LAB HELPERS
@@ -590,7 +499,8 @@ const CONDITION_TRACK_OVERRIDES = {
 
 const FADE_DURATION = 2; // seconds
 
-// Two slots — we alternate between them for crossfading
+// Two audio slots let us overlap two tracks during a crossfade.
+// While one fades out, the other fades in, making the switch inaudible.
 const slot = [
   { gain: null, source: null, stopTimer: null },
   { gain: null, source: null, stopTimer: null },
@@ -898,7 +808,8 @@ function updatePlayerTrack(time, temp)
     return;
   }
 
-  // Debounce: only crossfade after two consecutive readings agree on a new track
+  // Debounce: wait for two back-to-back sensor readings to agree before crossfading.
+  // This prevents a single noisy spike from triggering an unwanted track change.
   if (idx === lastMoodIndex) {
     moodIndexCount++;
   } else {
@@ -1031,36 +942,6 @@ if (unitToggleBtn) {
 }
 
 // ─────────────────────────────────────────────
-// SENSOR TOGGLES
-// ─────────────────────────────────────────────
-toggleButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const sensor = button.dataset.sensor;
-    if (!sensor || !(sensor in sensorState)) return;
-    sensorState[sensor] = !sensorState[sensor];
-    updateSensorCardState();
-    addEvent(`${sensor.charAt(0).toUpperCase() + sensor.slice(1)} sensor turned ${sensorState[sensor] ? "on" : "off"}`);
-
-    if (isDashboardPage && window.ws && window.ws.readyState === WebSocket.OPEN) {
-      renderData(
-        latestSensorValues.temperature,
-        latestSensorValues.humidity,
-        latestSensorValues.sound,
-        latestSensorValues.brightness
-      );
-    } else {
-      renderData(
-        latestSensorValues.temperature,
-        latestSensorValues.humidity,
-        latestSensorValues.sound,
-        latestSensorValues.brightness
-      );
-      if (statusText) statusText.textContent = "Live mode: Waiting for Arduino stream...";
-    }
-  });
-});
-
-// ─────────────────────────────────────────────
 // LAB SLIDERS
 // ─────────────────────────────────────────────
 [labTemp, labLight, labNoise, labHumidity].forEach((el) => {
@@ -1094,6 +975,7 @@ presetButtons.forEach((btn) => {
 
 // ─────────────────────────────────────────────
 // SESSION (login/logout nav)
+// Checks if the user is logged in and shows/hides the nav buttons accordingly.
 // ─────────────────────────────────────────────
 async function loadSession() {
   if (!loginBtn || !sessionUser || !logoutBtn) return;
