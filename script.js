@@ -697,8 +697,8 @@ function updatePlayerTrack(time, temp)
     moodIndexCount = 1;
   }
 
-  if (idx !== currentTrackIndex) {
-    moodIndexCount = 0;
+  if (idx !== currentTrackIndex) 
+  {
     playTrack(idx, true);
   }
 }
