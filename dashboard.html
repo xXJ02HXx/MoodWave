@@ -171,7 +171,7 @@
         </div>
 
         <!-- ANALYTICS PANELS -->
-        <p class="section-label">Deep Analytics</p>
+        <p class="section-label">Live Analytics</p>
         <div class="analytics-grid">
 
           <div class="analytics-card">
@@ -181,7 +181,7 @@
               <div class="score-bar"><div class="score-bar-fill" id="comfortBar" style="width:0%"></div></div>
             </div>
             <div class="score-bar-wrap" style="margin-top:14px;">
-              <div class="score-bar-label"><span>Occupancy Score</span><span id="occupancyVal">--</span></div>
+              <div class="score-bar-label"><span>Overstimulation Risk</span><span id="occupancyVal">--</span></div>
               <div class="score-bar"><div class="score-bar-fill warn" id="occupancyBar" style="width:0%"></div></div>
             </div>
             <div class="stat-row" style="margin-top:14px;">
@@ -193,7 +193,7 @@
               <span class="stat-value" id="noiseLabel">--</span>
             </div>
             <div class="stat-row">
-              <span class="stat-label">Noise Rel. dB</span>
+              <span class="stat-label">Noise Relative</span>
               <span class="stat-value" id="noiseRelDb">--</span>
             </div>
           </div>
@@ -204,8 +204,8 @@
             <div class="stat-row"><span class="stat-label">Temp (°F)</span><span class="stat-value" id="aTempF">--</span></div>
             <div class="stat-row"><span class="stat-label">Dew Point (°C)</span><span class="stat-value" id="aDewC">--</span></div>
             <div class="stat-row"><span class="stat-label">Dew Point (°F)</span><span class="stat-value" id="aDewF">--</span></div>
-            <div class="stat-row"><span class="stat-label">Heat Index (°C)</span><span class="stat-value" id="aHeatC">--</span></div>
-            <div class="stat-row"><span class="stat-label">Heat Index (°F)</span><span class="stat-value" id="aHeatF">--</span></div>
+            <div class="stat-row"><span class="stat-label">Thermal State</span><span class="stat-value" id="aHeatC">--</span></div>
+            <div class="stat-row"><span class="stat-label">Room Quality</span><span class="stat-value" id="aHeatF">--</span></div>
             <div class="stat-row"><span class="stat-label">Std Dev (rolling)</span><span class="stat-value" id="aTempStd">--</span></div>
             <div class="stat-row"><span class="stat-label">Rate of Change</span><span class="stat-value" id="aDtempDt">--</span></div>
           </div>
@@ -225,11 +225,11 @@
             <h4>💡 Light & Noise Detail</h4>
             <div class="stat-row"><span class="stat-label">Light Raw (ADC)</span><span class="stat-value" id="aLightRaw">--</span></div>
             <div class="stat-row"><span class="stat-label">Light Voltage</span><span class="stat-value" id="aLightV">--</span></div>
-            <div class="stat-row"><span class="stat-label">Brightness %</span><span class="stat-value" id="aBrightPct">--</span></div>
+            <div class="stat-row"><span class="stat-label">Light Relative %</span><span class="stat-value" id="aBrightPct">--</span></div>
             <div class="stat-row"><span class="stat-label">Light Std Dev</span><span class="stat-value" id="aLightStd">--</span></div>
             <div class="stat-row"><span class="stat-label">Light Rate of Change</span><span class="stat-value" id="aDlightDt">--</span></div>
             <div class="stat-row"><span class="stat-label">Noise P2P (smoothed)</span><span class="stat-value" id="aNoiseP2p">--</span></div>
-            <div class="stat-row"><span class="stat-label">Noise Std Dev</span><span class="stat-value" id="aNoiseStd">--</span></div>
+            <div class="stat-row"><span class="stat-label">Noise Relative %</span><span class="stat-value" id="aNoiseStd">--</span></div>
             <div class="stat-row"><span class="stat-label">Noise Rate of Change</span><span class="stat-value" id="aDnoiseDt">--</span></div>
           </div>
 
@@ -286,24 +286,26 @@
   }
 
   function updateAnalytics(d) {
-    const comfort   = d.comfort_score ?? 0;
-    const occupancy = d.occupancy_score ?? 0;
+    const roomScore = Number.isFinite(Number(d.room_score)) ? Number(d.room_score) : 0;
+    const overstim = Number.isFinite(Number(d.overstimulation_risk)) ? Number(d.overstimulation_risk) : 0;
+    const lightRelPct = Number.isFinite(Number(d.light_relative)) ? (Number(d.light_relative) * 100).toFixed(0) : null;
+    const noiseRelPct = Number.isFinite(Number(d.noise_relative)) ? (Number(d.noise_relative) * 100).toFixed(0) : null;
 
-    document.getElementById("comfortVal").textContent    = val(d.comfort_score);
-    document.getElementById("occupancyVal").textContent  = val(d.occupancy_score);
-    document.getElementById("comfortBar").style.width    = `${comfort}%`;
-    document.getElementById("occupancyBar").style.width  = `${occupancy * 100}%`;
+    document.getElementById("comfortVal").textContent    = val(d.room_score);
+    document.getElementById("occupancyVal").textContent  = val(d.overstimulation_risk);
+    document.getElementById("comfortBar").style.width    = `${Math.max(0, Math.min(100, roomScore))}%`;
+    document.getElementById("occupancyBar").style.width  = `${Math.max(0, Math.min(100, overstim))}%`;
 
-    document.getElementById("brightnessLabel").textContent = val(d.brightness_label);
+    document.getElementById("brightnessLabel").textContent = val(d.light_label);
     document.getElementById("noiseLabel").textContent      = val(d.noise_label);
-    document.getElementById("noiseRelDb").textContent      = val(d.noise_rel_db, " dB");
+    document.getElementById("noiseRelDb").textContent      = val(noiseRelPct, " %");
 
     document.getElementById("aTempC").textContent   = val(d.temp_c, " °C");
     document.getElementById("aTempF").textContent   = val(d.temp_f, " °F");
     document.getElementById("aDewC").textContent    = val(d.dew_point_c, " °C");
     document.getElementById("aDewF").textContent    = val(d.dew_point_f, " °F");
-    document.getElementById("aHeatC").textContent   = val(d.heat_index_c, " °C");
-    document.getElementById("aHeatF").textContent   = val(d.heat_index_f, " °F");
+    document.getElementById("aHeatC").textContent   = val(d.thermal_label);
+    document.getElementById("aHeatF").textContent   = val(d.room_quality_label);
     document.getElementById("aTempStd").textContent = val(d.temp_std, " °C");
     document.getElementById("aDtempDt").textContent = val(d.dtemp_dt, " °C/s");
 
@@ -317,11 +319,11 @@
 
     document.getElementById("aLightRaw").textContent  = val(d.light_raw);
     document.getElementById("aLightV").textContent    = val(d.light_voltage, " V");
-    document.getElementById("aBrightPct").textContent = val(d.brightness_pct, " %");
+    document.getElementById("aBrightPct").textContent = val(lightRelPct, " %");
     document.getElementById("aLightStd").textContent  = val(d.light_std);
     document.getElementById("aDlightDt").textContent  = val(d.dlight_dt, " /s");
     document.getElementById("aNoiseP2p").textContent  = val(d.noise_p2p);
-    document.getElementById("aNoiseStd").textContent  = val(d.noise_std);
+    document.getElementById("aNoiseStd").textContent  = val(noiseRelPct, " %");
     document.getElementById("aDnoiseDt").textContent  = val(d.dnoise_dt, " /s");
 
     document.getElementById("errLight").innerHTML = errBadge(d.light_err);
@@ -368,25 +370,43 @@
           return;
         }
 
-        const sound = d.noise_p2p ?? 0;
-        const brightness = d.brightness_pct ?? 0;
+        const sound = Number.isFinite(Number(d.noise_p2p)) ? Number(d.noise_p2p) : null;
+        const brightness = Number.isFinite(Number(d.light_relative)) ? Number(d.light_relative) * 100 : null;
 
         const soundEl = document.getElementById("soundValue");
         const soundUnit = document.getElementById("soundUnit");
 
         if (soundEl && window.sensorState.sound) {
-          soundEl.textContent = d.noise_label ?? "--";
+          soundEl.textContent = sound !== null ? sound.toFixed(1) : "--";
         }
         if (soundUnit) {
-          soundUnit.textContent = sound.toFixed(1);
+          soundUnit.textContent = "p2p";
         }
 
-        window.renderData(
-          d.temp_c ?? 23,
-          d.humidity_pct ?? 48,
-          sound,
-          brightness
-        );
+        if (
+          Number.isFinite(Number(d.temp_c)) &&
+          Number.isFinite(Number(d.humidity_pct)) &&
+          sound !== null &&
+          brightness !== null
+        ) {
+          window.renderData(
+            Number(d.temp_c),
+            Number(d.humidity_pct),
+            sound,
+            brightness
+          );
+        }
+
+        const moodEl = document.getElementById("spaceMood");
+        const adviceEl = document.getElementById("spaceAdvice");
+        const conditionEl = document.getElementById("roomCondition");
+        if (moodEl && d.room_state) moodEl.textContent = d.room_state;
+        if (adviceEl && d.conclusion) adviceEl.textContent = d.conclusion;
+        if (conditionEl) {
+          const thermal = d.thermal_label || "--";
+          const moisture = d.moisture_label || "--";
+          conditionEl.textContent = `${thermal} • ${moisture}`;
+        }
 
         updateAnalytics(d);
 

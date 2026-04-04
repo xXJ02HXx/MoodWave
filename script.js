@@ -231,13 +231,12 @@ function renderData(temperature, humidity, sound, brightness)
 function updateReverbFromBrightness(brightness) 
 {
   if (!audioCtx) return;
-
   // bright room = dry, dark room = wet
   const wetAmount = 1 - Math.min(brightness / 600, 1);
 
-  // Apply to BOTH slots — whichever is audible gets the correct reverb
+  // Apply to both slots so the currently audible slot always has the right mix.
   slot.forEach((s, idx) => {
-    if (s.source) {        // only bother if this slot is actually running
+    if (s.source) {
       setReverb(idx, wetAmount);
     }
   });
@@ -605,8 +604,54 @@ let lastMoodIndex   = -1;      // debounce: track last mood-driven index
 let moodIndexCount  = 0;       // debounce: consecutive matching readings
 let transitionInProgress = false;
 let pendingTrackIndex = null;
+let loopTimer = null;
 
 const bufferCache = new Map();
+
+function clearLoopTimer() {
+  if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; }
+}
+
+const LOOP_FADE = 2; // seconds — short overlap makes the loop undetectable
+
+// Schedule a seamless self-crossfade loop.
+// Fires just before the track ends, overlaps with a fresh copy for
+// LOOP_FADE seconds, then reschedules forever.
+function scheduleLoop(index, buffer) {
+  clearLoopTimer();
+  // Start the overlap LOOP_FADE seconds before the track would end
+  const delay = Math.max((buffer.duration - LOOP_FADE) * 1000, 100);
+  loopTimer = setTimeout(() => {
+    loopTimer = null;
+    if (currentTrackIndex !== index || transitionInProgress) return;
+    transitionInProgress = true;
+    const nextSlot = 1 - activeSlot;
+    startSlot(nextSlot, buffer);
+
+    // Short tight crossfade so the seam is imperceptible
+    const ctx  = getAudioCtx();
+    const now  = ctx.currentTime;
+    const from = slot[activeSlot].gain.gain;
+    const to   = slot[nextSlot].gain.gain;
+    from.cancelScheduledValues(now);
+    from.setValueAtTime(Math.max(from.value, 0.001), now);
+    from.exponentialRampToValueAtTime(0.001, now + LOOP_FADE);
+    to.cancelScheduledValues(now);
+    to.setValueAtTime(0.001, now);
+    to.exponentialRampToValueAtTime(1.0, now + LOOP_FADE);
+
+    const prevSlot = activeSlot;
+    activeSlot = nextSlot;
+    if (slot[prevSlot].stopTimer) clearTimeout(slot[prevSlot].stopTimer);
+    slot[prevSlot].stopTimer = setTimeout(() => {
+      stopSlot(prevSlot);
+      slot[prevSlot].gain.gain.value = 0;
+      transitionInProgress = false;
+      // Immediately re-schedule the next loop
+      if (currentTrackIndex === index) scheduleLoop(index, buffer);
+    }, (LOOP_FADE + 0.15) * 1000);
+  }, delay);
+}
 
 // Lazily create (or return) the AudioContext and GainNodes.
 // Must not be called before a user gesture.
@@ -672,7 +717,7 @@ function startSlot(idx, buffer)
   stopSlot(idx);
   const src = ctx.createBufferSource();
   src.buffer = buffer;
-  src.loop   = true;
+  // No native loop — scheduleLoop handles seamless self-crossfade
   src.connect(slot[idx].dryGain);
   src.connect(slot[idx].reverb);
   src.start();
@@ -765,6 +810,7 @@ async function playTrack(index, crossfadeIn = true) {
     playerPlaying = true;
     if (playerPlayBtn) playerPlayBtn.textContent = "⏸";
     if (musicPlayer)   musicPlayer.classList.remove("paused");
+    scheduleLoop(index, buffer);
 
   } catch (err) {
     // Audio file not found — label-only placeholder mode, no crash
@@ -788,6 +834,7 @@ function buildImpulse(ctx, duration = 2.5, decay = 3.0) {
 
 function pausePlayer() {
   if (!audioCtx) return;
+  clearLoopTimer();
   const ctx = getAudioCtx();
   const g   = slot[activeSlot].gain.gain;
   const now = ctx.currentTime;
@@ -812,6 +859,8 @@ async function resumePlayer() {
   playerPlaying = true;
   if (playerPlayBtn) playerPlayBtn.textContent = "⏸";
   if (musicPlayer)   musicPlayer.classList.remove("paused");
+  const resumeBuf = bufferCache.get(TRACKS[currentTrackIndex]?.src);
+  if (resumeBuf) scheduleLoop(currentTrackIndex, resumeBuf);
 }
 
 function applyMuteState() {
@@ -1175,3 +1224,4 @@ if (isDashboardPage) {
   setInterval(renderClock, 1000);
   if (statusText) statusText.textContent = "Live mode: Connecting to Arduino stream...";
 }
+
