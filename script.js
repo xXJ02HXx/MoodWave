@@ -438,34 +438,39 @@ function applyPreset(presetName) {
   addEvent(`Preset applied: ${presetName}`);
   updateLabOutput();
 }
-
 // ─────────────────────────────────────────────
 // MUSIC PLAYER — Web Audio API with crossfade
 // ─────────────────────────────────────────────
 
 const TRACKS = 
 [
-  { label: "Dawn Chill Pulse — Soft crystalline ambient", src: "/Audio/Chill1.mp3" },
-  { label: "Sunrise Heat Lift — Warm rising synthwave", src: "/Audio/Chill1.mp3" },
-  { label: "Noon Ice Focus — Clean focus electronica", src: "/Audio/Chill1.mp3" },
-  { label: "Solar Drive — High-motion rhythmic pulse", src: "/Audio/Chill1.mp3" },
-  { label: "Twilight Frost Calm — Deep evening ambient", src: "/Audio/Chill1.mp3" },
-  { label: "Night Ember Flow — Dark warm downtempo", src: "/Audio/Chill1.mp3" },
+  { label: "Snowed in",  src: "/audio/1_Snowed_In.mp3" },           // COLD, MORNING
+  { label: "Cool Dawn",         src: "/audio/2_Cool_Dawn.mp3"    }, // chilly Morning
+  { label: "Warm Morn",        src: "/audio/3_Warm_Morn.mp3"    },      // warm Morning
+  { label: "Rise and Grind",      src: "/audio/4_Rise_and_Grind.mp3"     },       // Hot Morning
+  { label: "Freezer Meals",         src: "/audio/5_Freezer_Meals.mp3"    },     // Cold Noon
+  { label: "Sweater Weather",      src: "/audio/6_Sweater_Weather.mp3"  },          // chilly Noon
+  { label: "Spacing Off",       src: "/audio/7_Spacing_Off.mp3"  },         // warm Noon
+  { label: "Microwave Madness",    src: "/audio/8_Microwave_Madness.mp3"   },           // Hot Noon
+  { label: "Title - CL",         src: "/audio/Chill1.mp3"    },     // Cold Night
+  { label: "Title - cL",      src: "/audio/Chill1.mp3"  },          // chilly Night
+  { label: "Title - hL",       src: "/audio/Chill1.mp3"  },         // warm Night
+  { label: "Title - HL",    src: "/audio/Chill1.mp3"   },           // Hot Night
 ];
 
 // Mood → track index map (matches TRACKS array above)
 const MOOD_TRACK_MAP = 
 {
-  "Focused":        2, // Noon Ice Focus
-  "High Energy":    3, // Solar Drive
-  "Calm / Relaxed": 4, // Twilight Frost Calm
-  "Balanced Flow":  0, // Dawn Chill Pulse
+  "Focused":        5, // Clear Signal
+  "High Energy":    2, // Drive Mode
+  "Calm / Relaxed": 1, // Calm Drift
+  "Balanced Flow":  7, // Noon Charge
 };
 const CONDITION_TRACK_OVERRIDES = {
-  "Hot and stuffy": 5, // Night Ember Flow
+  "Hot and stuffy": 3, // Blue Hour
 };
 
-const FADE_DURATION = 2.5; // seconds
+const FADE_DURATION = 8; // seconds
 
 // Two slots — we alternate between them for crossfading
 const slot = [
@@ -554,7 +559,7 @@ function crossfade(fromIdx, toIdx) {
 // Main play function.
 // crossfadeIn = true  → smooth crossfade from whatever is currently playing
 // crossfadeIn = false → hard start (first play, or after a pause)
-async function playTrack(index, crossfadeIn = false) {
+async function playTrack(index, crossfadeIn = true) {
   const ctx   = getAudioCtx();
   await ctx.resume();
 
@@ -623,9 +628,9 @@ async function resumePlayer() {
 // Called by renderData() every time sensor values update.
 // Uses a 2-reading debounce so a single noisy spike doesn't
 // cause an unwanted crossfade.
-function updatePlayerTrack(mood, condition) {
+function updatePlayerTrack(time, temp) {
   if (isTestLabPage || isLandingPage) return;
-  const idx = CONDITION_TRACK_OVERRIDES[condition] ?? MOOD_TRACK_MAP[mood] ?? currentTrackIndex;
+  const idx = 4*(time-1) + temp;
 
   // Always update the label when not actively playing
   if (!playerPlaying) {
@@ -681,6 +686,7 @@ if (playerPlayBtn) {
     }
   });
 }
+
 
 // ─────────────────────────────────────────────
 // TEMPERATURE UNIT TOGGLE
@@ -822,7 +828,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (isLandingPage) {
     if (playerTrack) playerTrack.textContent = "Chill1.mp3 — Main page audio test";
     if (playerPlayBtn) playerPlayBtn.textContent = "▶";
-    if (playerSkipBtn) playerSkipBtn.style.display = "none";
+    if (playerSkipBtn) 
+    {
+      playTrack(currentTrackIndex, true);
+    }
     if (musicPlayer) musicPlayer.classList.add("paused");
   }
 });
