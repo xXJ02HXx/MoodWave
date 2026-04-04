@@ -588,7 +588,7 @@ const CONDITION_TRACK_OVERRIDES = {
   "Hot and stuffy": 3, // Blue Hour
 };
 
-const FADE_DURATION = 4; // seconds
+const FADE_DURATION = 2; // seconds
 
 // Two slots — we alternate between them for crossfading
 const slot = [
