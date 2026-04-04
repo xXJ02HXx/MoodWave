@@ -6,7 +6,7 @@
     <title>MoodWave | Test Lab</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="test-lab-page">
     <nav class="nav">
       <div class="nav-left">
         <span class="nav-note">♪</span>
@@ -25,7 +25,7 @@
       </div>
     </nav>
 
-    <header class="hero compact-hero">
+    <header class="hero compact-hero testlab-hero">
       <p class="hero-eyebrow">Room Simulation Controls</p>
       <h1 class="hero-title compact-title">Test Lab</h1>
       <p id="statusText" class="hero-status">Try presets or custom sliders to simulate different spaces.</p>
@@ -34,21 +34,47 @@
     <section class="page-section" id="test-lab">
       <div class="section-inner">
         <div class="section-title-row">
-          <h2 class="section-title">Preset Rooms + Manual Controls</h2>
+          <h2 class="section-title">Test Lab Controls</h2>
         </div>
-        <p class="section-sub">Pick a preset (Sauna, Igloo, etc.) and MoodWave will auto-set sliders.</p>
 
-        <div class="preset-row" id="presetButtons">
-          <button class="preset-btn" data-preset="sauna" type="button">Sauna</button>
-          <button class="preset-btn" data-preset="igloo" type="button">Igloo</button>
-          <button class="preset-btn" data-preset="massage" type="button">Massage Parlor</button>
-          <button class="preset-btn" data-preset="library" type="button">Library</button>
-          <button class="preset-btn" data-preset="coffee" type="button">Coffee Shop</button>
-          <button class="preset-btn" data-preset="nightclub" type="button">Night Club</button>
+        <div class="lab-block-head">
+          <h3 class="lab-block-title">Preset Rooms</h3>
+          <p class="lab-block-sub">Choose a room and MoodWave auto-fills your sliders.</p>
+        </div>
+
+        <div class="preset-grid" id="presetButtons">
+          <button class="preset-card" data-preset="sauna" type="button">
+            <img src="images/suaneRoom.png" alt="Sauna preset" loading="lazy" />
+            <span>Sauna</span>
+          </button>
+          <button class="preset-card" data-preset="igloo" type="button">
+            <img src="images/iglooRoom.jpg" alt="Igloo preset" loading="lazy" />
+            <span>Igloo</span>
+          </button>
+          <button class="preset-card" data-preset="massage" type="button">
+            <img src="images/massageRoom.jpg" alt="Massage parlor preset" loading="lazy" />
+            <span>Massage Parlor</span>
+          </button>
+          <button class="preset-card" data-preset="library" type="button">
+            <img src="images/libraryRoom.png" alt="Library preset" loading="lazy" />
+            <span>Library</span>
+          </button>
+          <button class="preset-card" data-preset="coffee" type="button">
+            <img src="images/coffeShop.png" alt="Coffee shop preset" loading="lazy" />
+            <span>Coffee Shop</span>
+          </button>
+          <button class="preset-card" data-preset="nightclub" type="button">
+            <img src="images/nightClub.jpg" alt="Nightclub preset" loading="lazy" />
+            <span>Nightclub</span>
+          </button>
         </div>
 
         <div class="lab-wrap" id="labWrap">
           <div class="lab-controls">
+            <div class="lab-block-head">
+              <h3 class="lab-block-title">Manual Controls</h3>
+              <p class="lab-block-sub">Fine tune sensor conditions by hand.</p>
+            </div>
             <label class="slider-row">
               <div class="slider-label-row">
                 <span>Temperature</span>
