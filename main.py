@@ -19,8 +19,8 @@ SIMULATE = False
 
 # Relative sensor calibration windows (NOT lux / NOT dBA)
 # Tune these from your own room after observing real values.
-LIGHT_MIN_RAW = 650.0      # typical darkest observed value in your room
-LIGHT_MAX_RAW = 1023.0     # typical brightest observed value in your room
+LIGHT_MIN_RAW = 125.0      # typical darkest observed value in your room
+LIGHT_MAX_RAW = 500.0     # typical brightest observed value in your room
 NOISE_MIN_P2P = 5.0        # quiet baseline-ish mic p2p
 NOISE_MAX_P2P = 80.0       # loud but common upper bound in your room
 
