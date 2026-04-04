@@ -452,9 +452,9 @@ function applyPreset(presetName) {
   addEvent(`Preset applied: ${presetName}`);
   updateLabOutput();
 }
-// ─────────────────────────────────────────────
-// MUSIC PLAYER — Web Audio API with crossfade
-// ─────────────────────────────────────────────
+// ---------------------------------------------
+// MUSIC PLAYER - Web Audio API with crossfade
+//----------------------------------------------
 
 const TRACKS = 
 [
@@ -466,7 +466,7 @@ const TRACKS =
   { label: "Sweater Weather",         src: "/Audio/6_Sweater_Weather.mp3"  },       // chilly Noon
   { label: "Spacing Off",             src: "/Audio/7_Spacing_Off.mp3"  },           // warm Noon
   { label: "Microwave Madness",       src: "/Audio/8_Microwave_Madness.mp3"   },    // Hot Noon
-  { label: "Canary in the Ice Mine", src: "/Audio/9_Canarie_in_the_Ice_Mine.mp3"}, // Cold Night
+  { label: "Canary in the Ice Mine",  src: "/Audio/9_Canarie_in_the_Ice_Mine.mp3"}, // Cold Night
   { label: "Journey to the Center of the Moon", src: "/Audio/10_Journey_to_the_Center_of_the_Moon.mp3"  },                  // chilly Night
   { label: "Cave Base",               src: "/Audio/11_Cave_Base.mp3"  },                  // warm Night
   { label: "Invisible Threat",        src: "/Audio/12_Invisible_Threat.mp3"   },                 // Hot Night
