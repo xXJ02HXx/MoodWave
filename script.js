@@ -839,5 +839,5 @@ if (isTestLabPage) {
 if (isDashboardPage) {
   renderClock();
   setInterval(renderClock, 1000);
-  if (statusText) statusText.textContent = "Live mode: Waiting for Arduino stream...";
+  if (statusText) statusText.textContent = "Live mode: Connecting to Arduino stream...";
 }

@@ -267,7 +267,12 @@
   const statusEl = document.getElementById("statusText");
   const timerEl  = document.getElementById("eventTimer");
   let lastNoiseLabel = "";
-  let ws = null;
+  const SENSOR_WS_URL = window.MOODWAVE_SENSOR_WS || (() => {
+    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const sensorHost = window.MOODWAVE_SENSOR_HOST || "localhost:8000";
+    return `${wsProtocol}://${sensorHost}/ws`;
+  })();
+  let socket = null;
   let reconnectTimer = null;
 
   function val(v, unit = "") {
@@ -331,29 +336,37 @@
     }
   }
 
-  function connectWS() {
-    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+  function connectLiveStream() {
+    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
       return;
     }
 
-    ws = new WebSocket("ws://localhost:8000/ws");
-    window.ws = ws;
+    try {
+      socket = new WebSocket(SENSOR_WS_URL);
+      window.ws = socket;
+    } catch (e) {
+      if (statusEl) statusEl.textContent = "Waiting for Arduino service...";
+      scheduleReconnect();
+      return;
+    }
 
-    ws.onopen = () => {
-      console.log("WebSocket connected");
+    socket.onopen = () => {
       if (statusEl) statusEl.textContent = "Live mode: Arduino sensor stream active.";
-      addEvent("Connected to Arduino sensor stream.");
-
+      addEvent("Connected to Arduino live stream.");
       if (reconnectTimer) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
       }
     };
 
-    ws.onmessage = (event) => {
+    socket.onmessage = (event) => {
       try {
         const d = JSON.parse(event.data);
-        console.log("LIVE DATA:", d);
+
+        if (d.error) {
+          if (statusEl) statusEl.textContent = "Arduino disconnected. Waiting for board...";
+          return;
+        }
 
         const sound = d.noise_p2p ?? 0;
         const brightness = d.brightness_pct ?? 0;
@@ -381,32 +394,31 @@
           timerEl.textContent = `Updated ${new Date().toLocaleTimeString()}`;
         }
       } catch (e) {
-        console.warn("WS parse error:", e);
+        console.warn("Live data parse error:", e);
       }
     };
 
-    ws.onclose = () => {
-      console.log("WebSocket closed");
+    socket.onclose = () => {
       window.ws = null;
-      ws = null;
-
-      if (statusEl) statusEl.textContent = "Disconnected — waiting to reconnect to Arduino stream.";
-      addEvent("WebSocket disconnected. Retrying in 3s...");
-
-      if (!reconnectTimer) {
-        reconnectTimer = setTimeout(() => {
-          reconnectTimer = null;
-          connectWS();
-        }, 3000);
-      }
+      socket = null;
+      if (statusEl) statusEl.textContent = "Live mode: disconnected. Reconnecting...";
+      scheduleReconnect();
     };
 
-    ws.onerror = (err) => {
-      console.warn("WebSocket error:", err);
+    socket.onerror = () => {
+      if (statusEl) statusEl.textContent = "Waiting for Arduino service...";
     };
   }
 
-  connectWS();
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      connectLiveStream();
+    }, 2000);
+  }
+
+  connectLiveStream();
     </script>
   </body>
 </html>
