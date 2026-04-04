@@ -268,8 +268,11 @@
   const timerEl  = document.getElementById("eventTimer");
   let lastNoiseLabel = "";
   const SENSOR_WS_URL = window.MOODWAVE_SENSOR_WS || (() => {
-    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
     const sensorHost = window.MOODWAVE_SENSOR_HOST || "localhost:8000";
+    const localSensorHost = /^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(sensorHost);
+    const wsProtocol = localSensorHost
+      ? "ws"
+      : (window.location.protocol === "https:" ? "wss" : "ws");
     return `${wsProtocol}://${sensorHost}/ws`;
   })();
   let socket = null;
