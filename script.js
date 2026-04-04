@@ -37,7 +37,6 @@ const labNoiseValue    = document.getElementById("labNoiseValue");
 const labHumidityValue = document.getElementById("labHumidityValue");
 const labTimeOfDayValue = document.getElementById("labTimeOfDayValue");
 const labMusicTitle    = document.getElementById("labMusicTitle");
-const labMusicSummary  = document.getElementById("labMusicSummary");
 const labRoomType      = document.getElementById("labRoomType");
 const labGoalValue     = document.getElementById("labGoalValue");
 const labMusicStyle    = document.getElementById("labMusicStyle");
@@ -393,37 +392,31 @@ function generateMusicProfile(temperature, light, noise, humidity, goal, timeOfD
     "early-cold": {
       title: "Dawn Chill Pulse",
       style: "Soft crystalline ambient",
-      summary: "Cool early air gets a gentle rhythmic bed with light texture to ease you into the day.",
       energy: "Low"
     },
     "early-hot": {
       title: "Sunrise Heat Lift",
       style: "Warm rising synthwave",
-      summary: "Early warmth is balanced with airy highs and controlled rhythm so the room feels bright, not heavy.",
       energy: "Medium"
     },
     "midday-cold": {
       title: "Noon Ice Focus",
       style: "Clean focus electronica",
-      summary: "Midday coolness gets crisp percussion and stable patterns to keep productivity locked in.",
       energy: "Medium"
     },
     "midday-hot": {
       title: "Solar Drive",
       style: "High-motion rhythmic pulse",
-      summary: "Hot midday conditions push a stronger groove with brighter accents to channel the room's intensity.",
       energy: "High"
     },
     "late-cold": {
       title: "Twilight Frost Calm",
       style: "Deep evening ambient",
-      summary: "Late cool rooms get wider pads and slower movement for a calm, grounded night feel.",
       energy: "Low"
     },
     "late-hot": {
       title: "Night Ember Flow",
       style: "Dark warm downtempo",
-      summary: "Late warmth is softened with darker low-end waves and smoother transitions for sustained comfort.",
       energy: "Medium"
     }
   };
@@ -431,17 +424,14 @@ function generateMusicProfile(temperature, light, noise, humidity, goal, timeOfD
   const selected = profiles[key] || profiles["midday-cold"];
   let title = selected.title;
   let style = selected.style;
-  let summary = selected.summary;
   let energy = selected.energy;
 
   if (roomType === "Hot and stuffy") {
-    summary = "The room feels hot and heavy. MoodWave offsets that with lighter textures and more air in the mix.";
   }
   if (roomType === "Overstimulated") {
-    summary = "The room is overstimulated, so MoodWave thins the mix and tightens rhythm to reduce sensory pressure.";
   }
 
-  return { roomType, title, summary, style, energy };
+  return { roomType, title, style, energy };
 }
 
 function updateLabOutput() {
@@ -466,7 +456,6 @@ function updateLabOutput() {
   if (labHumidityValue) labHumidityValue.textContent  = `${humidity}%`;
   if (labTimeOfDayValue) labTimeOfDayValue.textContent = timeOfDay;
   if (labMusicTitle)    labMusicTitle.textContent     = trackLabel;
-  if (labMusicSummary)  labMusicSummary.textContent   = profile.summary;
   if (labRoomType)      labRoomType.textContent       = profile.roomType;
   if (labGoalValue)     labGoalValue.textContent      = selectedGoal.charAt(0).toUpperCase() + selectedGoal.slice(1);
   if (labMusicStyle)    labMusicStyle.textContent     = profile.style;
