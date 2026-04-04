@@ -340,7 +340,7 @@ function noiseLabel(value) {
   if (value < 40) return "Low buzz";
   if (value < 60) return "Busy";
   if (value < 80) return "Loud";
-  return "RAVE!";
+  return "SUPER LOUD";
 }
 
 function gradientTrack(inputEl, percent, active, rest) {

@@ -49,8 +49,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 28px;
-  height: 58px;
+  padding: 0 22px 0 6px;
+  height: 82px;
   background: rgba(6, 16, 28, 0.82);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
@@ -59,7 +59,7 @@ body {
 .nav-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .nav-right {
@@ -76,17 +76,17 @@ body {
 }
 
 .brand {
-  font-size: 1.35rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: var(--accent-soft);
+  display: inline-flex;
+  align-items: center;
   text-decoration: none;
 }
 
-.nav-note {
-  color: var(--accent);
-  font-size: 1.2rem;
-  user-select: none;
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 74px;
+  max-width: min(560px, 82vw);
+  object-fit: contain;
 }
 
 /* ─────────────────────────────────────────────
@@ -964,8 +964,9 @@ body {
    SLIDE PANELS (landing page modal panels)
    ───────────────────────────────────────────── */
 .nav-large {
-  padding: 0 36px;
-  height: 72px;
+  /* Keep landing navbar the same large size as dashboard/test-lab */
+  padding: 0 22px 0 6px;
+  height: 82px;
 }
 
 .btn-hover-only {
@@ -1122,25 +1123,31 @@ body {
   max-width: 15ch;
 }
 
-.login-logo-placeholder {
+.login-showcase-copy {
   margin-top: 24px;
-  width: min(320px, 100%);
-  aspect-ratio: 1 / 1;
-  min-height: 0;
-  border-radius: 18px;
-  border: 1px dashed rgba(125, 173, 214, 0.42);
-  background: rgba(255,255,255,0.04);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  max-width: 36ch;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 1rem;
 }
 
-.login-logo-placeholder span {
-  color: var(--accent-soft);
-  font-size: 1.18rem;
+.login-feature-list {
+  margin-top: 18px;
+  width: min(430px, 100%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.login-feature-list span {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 173, 214, 0.5);
+  background: rgba(15, 42, 68, 0.55);
+  color: #d8f2ff;
+  font-size: 0.86rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .login-card {
