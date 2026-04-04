@@ -448,6 +448,49 @@ if (logoutBtn) {
 }
 
 // ─────────────────────────────────────────────
+// CONTENT PANEL TABS (landing page)
+// ─────────────────────────────────────────────
+function switchPanel(panelName) {
+  // Hide all panels
+  document.querySelectorAll(".content-panel").forEach((panel) => {
+    panel.classList.remove("active");
+  });
+  
+  // Deactivate all buttons
+  document.querySelectorAll("[data-panel]").forEach((btn) => {
+    btn.classList.remove("active");
+  });
+  
+  // Show selected panel
+  const panel = document.getElementById(`panel-${panelName}`);
+  if (panel) {
+    panel.classList.add("active");
+    // Scroll panel into view with less aggressive offset
+    panel.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  
+  // Highlight selected button
+  const btn = document.querySelector(`[data-panel="${panelName}"]`);
+  if (btn) {
+    btn.classList.add("active");
+  }
+}
+
+// Attach click listeners to all data-panel buttons
+document.querySelectorAll("[data-panel]").forEach((btn) => {
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const panelName = btn.dataset.panel;
+    switchPanel(panelName);
+  });
+});
+
+// Set default active panel on page load
+document.addEventListener("DOMContentLoaded", () => {
+  switchPanel("what");
+});
+
+// ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
 loadSession();

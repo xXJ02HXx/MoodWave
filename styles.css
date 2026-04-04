@@ -37,7 +37,6 @@ body {
   background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
   color: var(--text);
   min-height: 100vh;
-  padding-bottom: 100px; /* room for music player */
 }
 
 /* ─────────────────────────────────────────────
@@ -119,8 +118,8 @@ body {
 }
 
 .btn-small {
-  padding: 6px 11px;
-  font-size: 0.78rem;
+  padding: 9px 16px;
+  font-size: 0.88rem;
 }
 
 .session-user {
@@ -137,7 +136,7 @@ body {
    ───────────────────────────────────────────── */
 .hero {
   text-align: center;
-  padding: 90px 24px 80px;
+  padding: 50px 24px 45px;
   background:
     radial-gradient(ellipse at 50% 0%, rgba(45, 194, 255, 0.18) 0%, transparent 55%),
     linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
@@ -145,14 +144,14 @@ body {
 
 .hero-eyebrow {
   color: var(--accent);
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .hero-title {
-  font-size: clamp(4rem, 12vw, 9rem);
+  font-size: clamp(2.8rem, 10vw, 6rem);
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -160,33 +159,33 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .hero-slogan {
-  font-size: clamp(1.1rem, 3vw, 1.7rem);
+  font-size: clamp(0.95rem, 2.5vw, 1.4rem);
   color: var(--muted);
   max-width: 50ch;
-  margin: 0 auto 20px;
+  margin: 0 auto 12px;
   font-style: italic;
 }
 
 .hero-status {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--accent);
-  margin-bottom: 34px;
+  margin-bottom: 20px;
 }
 
 .hero-cta-row {
   display: flex;
-  gap: 14px;
+  gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
 }
 
 .hero-btn {
-  font-size: 1rem;
-  padding: 12px 22px;
+  font-size: 0.9rem;
+  padding: 10px 18px;
   border-radius: 999px;
 }
 
@@ -215,7 +214,7 @@ body {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 0;
 }
 
 .section-title-row {
@@ -253,7 +252,7 @@ body {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 18px;
-  padding: 32px 36px;
+  padding: 42px 48px;
   box-shadow: 0 16px 48px rgba(0,0,0,0.28);
 }
 
@@ -270,13 +269,13 @@ body {
 }
 
 .info-card h2 {
-  font-size: 1.65rem;
-  margin-bottom: 14px;
+  font-size: 1.5rem;
+  margin-bottom: 10px;
 }
 
 .info-card p {
   color: var(--muted);
-  line-height: 1.75;
+  line-height: 1.65;
   max-width: 78ch;
 }
 
@@ -662,8 +661,9 @@ body {
 }
 
 .account-card {
-  background: rgba(11, 29, 48, 0.78);
+  background: linear-gradient(135deg, rgba(20, 56, 90, 0.7) 0%, rgba(8, 21, 37, 0.92) 100%);
   border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
   border-radius: 16px;
   padding: 24px 20px;
   text-align: center;
@@ -690,18 +690,18 @@ body {
    ───────────────────────────────────────────── */
 .footer {
   text-align: center;
-  padding: 24px;
+  padding: 12px 24px;
   color: var(--muted);
   font-size: 0.88rem;
   border-top: 1px solid var(--line);
 }
 
 /* ─────────────────────────────────────────────
-   MUSIC PLAYER — fixed bottom-right
+   MUSIC PLAYER — fixed top-right (below nav)
    ───────────────────────────────────────────── */
 .music-player {
   position: fixed;
-  bottom: 20px;
+  top: 82px;
   right: 20px;
   z-index: 50;
   width: min(380px, 92vw);
@@ -780,6 +780,81 @@ body {
 .music-player.paused .player-note {
   animation-play-state: paused;
   opacity: 0.45;
+}
+
+/* ─────────────────────────────────────────────
+   SLIDE PANELS (landing page modal panels)
+   ───────────────────────────────────────────── */
+.nav-large {
+  padding: 0 36px;
+  height: 72px;
+}
+
+.btn-hover-only {
+  background: rgba(45, 194, 255, 0.12);
+  color: var(--text);
+  border-color: rgba(45, 194, 255, 0.4);
+  transition: background 0.24s ease, color 0.24s ease, border-color 0.24s ease, transform 0.14s ease;
+}
+
+.btn-hover-only:hover {
+  background: var(--accent);
+  color: #021e30;
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.btn-hover-only.active {
+  background: var(--accent);
+  color: #021e30;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
+.panels-container {
+  position: relative;
+}
+
+.content-panel {
+  display: none;
+  padding: 10px 24px;
+  min-height: auto;
+}
+
+.content-panel.active {
+  display: block;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.account-section {
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.account-title-bar {
+  margin-bottom: 32px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.account-title-bar h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.account-title-bar p {
+  color: var(--muted);
+  font-size: 1rem;
 }
 
 /* ─────────────────────────────────────────────
