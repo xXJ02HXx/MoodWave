@@ -1,0 +1,12 @@
+{
+  "name": "moodwave",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MoodWave showcase app with simple auth and Supabase-backed users",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

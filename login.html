@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoodWave Login</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="login-page">
+    <main class="login-card">
+      <h1>Login</h1>
+
+      <div class="mode-row">
+        <button id="loginModeBtn" class="btn" type="button">Login</button>
+        <button id="registerModeBtn" class="btn btn-secondary" type="button">Create Account</button>
+      </div>
+
+      <form id="authForm" class="login-form">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" required />
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required />
+
+        <button id="submitBtn" class="btn" type="submit">Login</button>
+      </form>
+
+      <p id="loginMessage" class="login-message"></p>
+      <a class="back-link" href="/">Back to main page</a>
+    </main>
+
+    <script src="login.js"></script>
+  </body>
+</html>

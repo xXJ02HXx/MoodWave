@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoodWave | Sensor-Driven Creative Environment</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="brand">MoodWave</div>
+      <div class="nav-actions">
+        <a class="btn btn-secondary" href="#pipeline">View Data Pipeline</a>
+        <a class="btn" id="loginBtn" href="/login">Login</a>
+        <span class="session-user" id="sessionUser" style="display: none;"></span>
+        <button class="btn" id="logoutBtn" style="display: none;" type="button">Logout</button>
+      </div>
+    </nav>
+
+    <main class="main-card">
+      <p class="eyebrow">MoodWave Access Portal</p>
+      <h1>Build Better Spaces with Real Sensor Intelligence</h1>
+      <p>
+        MoodWave is an app that uses an Arduino sensor board to measure room conditions like
+        temperature, humidity, sound, and brightness. The system analyzes these values to make
+        assumptions about the current space and mood.
+      </p>
+      <p>
+        By using the environmental data, MoodWave creates an environment that increases
+        productivity, reduces stress, and stimulates creativity.
+      </p>
+      <p id="statusText" class="status-text">Live mode: Placeholder data active.</p>
+    </main>
+
+    <section class="dashboard" id="dashboard">
+      <div class="section-head">
+        <h2>Live Sensor Placeholder Board</h2>
+        <p>These are sample values for now. Later they will come from Arduino via Python to JavaScript.</p>
+      </div>
+
+      <div class="sensor-grid">
+        <article class="sensor-card">
+          <h3>Temperature</h3>
+          <p class="sensor-value"><span id="tempValue">--</span> C</p>
+          <p class="sensor-note">Comfort and alertness indicator</p>
+        </article>
+
+        <article class="sensor-card">
+          <h3>Humidity</h3>
+          <p class="sensor-value"><span id="humidityValue">--</span> %</p>
+          <p class="sensor-note">Air quality and calmness cue</p>
+        </article>
+
+        <article class="sensor-card">
+          <h3>Sound</h3>
+          <p class="sensor-value"><span id="soundValue">--</span> dB</p>
+          <p class="sensor-note">Noise pressure and focus signal</p>
+        </article>
+
+        <article class="sensor-card">
+          <h3>Brightness</h3>
+          <p class="sensor-value"><span id="brightnessValue">--</span> lux</p>
+          <p class="sensor-note">Energy and visual comfort level</p>
+        </article>
+      </div>
+
+      <div class="mood-card">
+        <p>Estimated Space Mood</p>
+        <p id="spaceMood" class="mood-value">Analyzing...</p>
+      </div>
+    </section>
+
+    <section class="pipeline" id="pipeline">
+      <div class="section-head">
+        <h2>Future Data Pipeline</h2>
+      </div>
+      <div class="pipeline-steps">
+        <div class="step">1. Arduino Board Reads Sensors</div>
+        <div class="step">2. Python Collects + Processes Values</div>
+        <div class="step">3. JavaScript Displays Live Dashboard</div>
+        <div class="step">4. MoodWave Tunes Environment Experience</div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>MoodWave Project Showcase | Hackathon Build</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
