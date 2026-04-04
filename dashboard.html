@@ -5,6 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MoodWave | Live Dashboard</title>
     <link rel="stylesheet" href="styles.css" />
+    <style>
+      .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 14px;
+        margin-top: 14px;
+      }
+      .analytics-card {
+        background: rgba(10, 26, 44, 0.88);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px 20px;
+      }
+      .analytics-card h4 {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--accent);
+        margin-bottom: 14px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 8px;
+      }
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(125,173,214,0.08);
+        font-size: 0.85rem;
+      }
+      .stat-row:last-child { border-bottom: none; }
+      .stat-label { color: var(--muted); font-size: 0.78rem; }
+      .stat-value { color: var(--accent-soft); font-weight: 600; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+      .stat-value.good    { color: #5dde8a; }
+      .stat-value.warn    { color: var(--warning); }
+      .stat-value.bad     { color: #ff7070; }
+      .score-bar-wrap { margin-top: 10px; }
+      .score-bar-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+      .score-bar { height: 8px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
+      .score-bar-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; background: linear-gradient(90deg, #2dc2ff, #5dde8a); }
+      .score-bar-fill.warn { background: linear-gradient(90deg, var(--warning), #ff7070); }
+      .error-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; }
+      .error-badge.ok  { background: rgba(93,222,138,0.15); color: #5dde8a; }
+      .error-badge.err { background: rgba(255,112,112,0.15); color: #ff7070; }
+      .section-label {
+        font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--accent); margin: 24px 0 10px;
+        display: flex; align-items: center; gap: 8px;
+      }
+      .section-label::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+    </style>
   </head>
   <body>
     <nav class="nav">
@@ -28,7 +79,7 @@
     <header class="hero compact-hero">
       <p class="hero-eyebrow">Live Sensor Stream</p>
       <h1 class="hero-title compact-title">Live Dashboard</h1>
-      <p id="statusText" class="hero-status">Live mode: Placeholder sensor stream active.</p>
+      <p id="statusText" class="hero-status">Connecting to Arduino sensor stream...</p>
     </header>
 
     <section class="page-section" id="dashboard">
@@ -37,7 +88,7 @@
           <h2 class="section-title">Room Conditions</h2>
           <span class="live-chip" id="eventTimer">Events updating live</span>
         </div>
-        <p class="section-sub">Placeholder values. Each sensor can be toggled on or off.</p>
+        <p class="section-sub">Live Arduino data. Each sensor can be toggled on or off.</p>
 
         <div class="sensor-grid">
           <article class="sensor-card" id="card-temperature">
@@ -60,7 +111,7 @@
             </div>
             <div class="sensor-value-row">
               <span class="sensor-big" id="humidityValue">--</span>
-              <span class="sensor-unit">%</span>
+              <span class="sensor-unit">% RH</span>
             </div>
             <p class="sensor-note">Tracks dryness, stuffiness, and air heaviness.</p>
           </article>
@@ -72,7 +123,7 @@
             </div>
             <div class="sensor-value-row">
               <span class="sensor-big" id="soundValue">--</span>
-              <span class="sensor-unit">dB</span>
+              <span class="sensor-unit" id="soundUnit">—</span>
             </div>
             <p class="sensor-note">Measures how quiet or overwhelming the room feels.</p>
           </article>
@@ -84,7 +135,7 @@
             </div>
             <div class="sensor-value-row">
               <span class="sensor-big" id="brightnessValue">--</span>
-              <span class="sensor-unit">lux</span>
+              <span class="sensor-unit">%</span>
             </div>
             <p class="sensor-note">Monitors whether the room is dim, balanced, or intense.</p>
           </article>
@@ -110,7 +161,6 @@
               </div>
             </div>
           </div>
-
           <div class="log-card">
             <div class="log-head">
               <h3>Event Log</h3>
@@ -119,12 +169,84 @@
             <ul class="event-log" id="eventLog"></ul>
           </div>
         </div>
+
+        <!-- ANALYTICS PANELS -->
+        <p class="section-label">Deep Analytics</p>
+        <div class="analytics-grid">
+
+          <div class="analytics-card">
+            <h4>🧠 Room Scores</h4>
+            <div class="score-bar-wrap">
+              <div class="score-bar-label"><span>Comfort Score</span><span id="comfortVal">--</span></div>
+              <div class="score-bar"><div class="score-bar-fill" id="comfortBar" style="width:0%"></div></div>
+            </div>
+            <div class="score-bar-wrap" style="margin-top:14px;">
+              <div class="score-bar-label"><span>Occupancy Score</span><span id="occupancyVal">--</span></div>
+              <div class="score-bar"><div class="score-bar-fill warn" id="occupancyBar" style="width:0%"></div></div>
+            </div>
+            <div class="stat-row" style="margin-top:14px;">
+              <span class="stat-label">Brightness Label</span>
+              <span class="stat-value" id="brightnessLabel">--</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Noise Level</span>
+              <span class="stat-value" id="noiseLabel">--</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Noise Rel. dB</span>
+              <span class="stat-value" id="noiseRelDb">--</span>
+            </div>
+          </div>
+
+          <div class="analytics-card">
+            <h4>🌡 Temperature Detail</h4>
+            <div class="stat-row"><span class="stat-label">Temp (°C)</span><span class="stat-value" id="aTempC">--</span></div>
+            <div class="stat-row"><span class="stat-label">Temp (°F)</span><span class="stat-value" id="aTempF">--</span></div>
+            <div class="stat-row"><span class="stat-label">Dew Point (°C)</span><span class="stat-value" id="aDewC">--</span></div>
+            <div class="stat-row"><span class="stat-label">Dew Point (°F)</span><span class="stat-value" id="aDewF">--</span></div>
+            <div class="stat-row"><span class="stat-label">Heat Index (°C)</span><span class="stat-value" id="aHeatC">--</span></div>
+            <div class="stat-row"><span class="stat-label">Heat Index (°F)</span><span class="stat-value" id="aHeatF">--</span></div>
+            <div class="stat-row"><span class="stat-label">Std Dev (rolling)</span><span class="stat-value" id="aTempStd">--</span></div>
+            <div class="stat-row"><span class="stat-label">Rate of Change</span><span class="stat-value" id="aDtempDt">--</span></div>
+          </div>
+
+          <div class="analytics-card">
+            <h4>💧 Humidity Detail</h4>
+            <div class="stat-row"><span class="stat-label">Relative Humidity</span><span class="stat-value" id="aRh">--</span></div>
+            <div class="stat-row"><span class="stat-label">Abs. Humidity (g/m³)</span><span class="stat-value" id="aAbsH">--</span></div>
+            <div class="stat-row"><span class="stat-label">Humidity Ratio</span><span class="stat-value" id="aHumRatio">--</span></div>
+            <div class="stat-row"><span class="stat-label">Sat. Vapor Press. (hPa)</span><span class="stat-value" id="aSatVp">--</span></div>
+            <div class="stat-row"><span class="stat-label">Act. Vapor Press. (hPa)</span><span class="stat-value" id="aActVp">--</span></div>
+            <div class="stat-row"><span class="stat-label">Std Dev (rolling)</span><span class="stat-value" id="aRhStd">--</span></div>
+            <div class="stat-row"><span class="stat-label">Rate of Change</span><span class="stat-value" id="aDrhDt">--</span></div>
+          </div>
+
+          <div class="analytics-card">
+            <h4>💡 Light & Noise Detail</h4>
+            <div class="stat-row"><span class="stat-label">Light Raw (ADC)</span><span class="stat-value" id="aLightRaw">--</span></div>
+            <div class="stat-row"><span class="stat-label">Light Voltage</span><span class="stat-value" id="aLightV">--</span></div>
+            <div class="stat-row"><span class="stat-label">Brightness %</span><span class="stat-value" id="aBrightPct">--</span></div>
+            <div class="stat-row"><span class="stat-label">Light Std Dev</span><span class="stat-value" id="aLightStd">--</span></div>
+            <div class="stat-row"><span class="stat-label">Light Rate of Change</span><span class="stat-value" id="aDlightDt">--</span></div>
+            <div class="stat-row"><span class="stat-label">Noise P2P (smoothed)</span><span class="stat-value" id="aNoiseP2p">--</span></div>
+            <div class="stat-row"><span class="stat-label">Noise Std Dev</span><span class="stat-value" id="aNoiseStd">--</span></div>
+            <div class="stat-row"><span class="stat-label">Noise Rate of Change</span><span class="stat-value" id="aDnoiseDt">--</span></div>
+          </div>
+
+          <div class="analytics-card">
+            <h4>⚙️ Sensor Health</h4>
+            <div class="stat-row"><span class="stat-label">Light Sensor</span><span class="stat-value" id="errLight">--</span></div>
+            <div class="stat-row"><span class="stat-label">Microphone</span><span class="stat-value" id="errMic">--</span></div>
+            <div class="stat-row"><span class="stat-label">DHT (Temp/Humidity)</span><span class="stat-value" id="errDht">--</span></div>
+            <div class="stat-row"><span class="stat-label">Last PC Timestamp</span><span class="stat-value" id="aPcTime" style="font-size:0.72rem;">--</span></div>
+            <div class="stat-row"><span class="stat-label">Uptime (s)</span><span class="stat-value" id="aTimeS">--</span></div>
+          </div>
+
+        </div>
       </div>
     </section>
 
-    <footer class="footer">
-      <p>MoodWave — Live Dashboard</p>
-    </footer>
+    <footer class="footer"><p>MoodWave — Live Dashboard</p></footer>
 
     <div class="music-player" id="musicPlayer">
       <div class="player-inner">
@@ -134,11 +256,157 @@
           <span class="player-track" id="playerTrack">Focused Pulse — Calm electronic focus</span>
         </div>
         <div class="player-btns">
-          <button class="player-btn" id="playerPlayBtn" type="button" title="Play / Pause">⏸</button>
+          <button class="player-btn" id="playerPlayBtn" type="button">⏸</button>
+          <button class="player-btn" id="playerSkipBtn" type="button">⏭</button>
         </div>
       </div>
     </div>
 
     <script src="script.js"></script>
+    <script>
+  const statusEl = document.getElementById("statusText");
+  const timerEl  = document.getElementById("eventTimer");
+  let lastNoiseLabel = "";
+  let ws = null;
+  let reconnectTimer = null;
+
+  function val(v, unit = "") {
+    return (v !== null && v !== undefined) ? `${v}${unit}` : "--";
+  }
+
+  function errBadge(code) {
+    return code === 0
+      ? '<span class="error-badge ok">OK</span>'
+      : '<span class="error-badge err">ERR</span>';
+  }
+
+  function updateAnalytics(d) {
+    const comfort   = d.comfort_score ?? 0;
+    const occupancy = d.occupancy_score ?? 0;
+
+    document.getElementById("comfortVal").textContent    = val(d.comfort_score);
+    document.getElementById("occupancyVal").textContent  = val(d.occupancy_score);
+    document.getElementById("comfortBar").style.width    = `${comfort}%`;
+    document.getElementById("occupancyBar").style.width  = `${occupancy * 100}%`;
+
+    document.getElementById("brightnessLabel").textContent = val(d.brightness_label);
+    document.getElementById("noiseLabel").textContent      = val(d.noise_label);
+    document.getElementById("noiseRelDb").textContent      = val(d.noise_rel_db, " dB");
+
+    document.getElementById("aTempC").textContent   = val(d.temp_c, " °C");
+    document.getElementById("aTempF").textContent   = val(d.temp_f, " °F");
+    document.getElementById("aDewC").textContent    = val(d.dew_point_c, " °C");
+    document.getElementById("aDewF").textContent    = val(d.dew_point_f, " °F");
+    document.getElementById("aHeatC").textContent   = val(d.heat_index_c, " °C");
+    document.getElementById("aHeatF").textContent   = val(d.heat_index_f, " °F");
+    document.getElementById("aTempStd").textContent = val(d.temp_std, " °C");
+    document.getElementById("aDtempDt").textContent = val(d.dtemp_dt, " °C/s");
+
+    document.getElementById("aRh").textContent       = val(d.humidity_pct, " %");
+    document.getElementById("aAbsH").textContent     = val(d.abs_humidity_gm3, " g/m³");
+    document.getElementById("aHumRatio").textContent = val(d.humidity_ratio);
+    document.getElementById("aSatVp").textContent    = val(d.sat_vp_hpa, " hPa");
+    document.getElementById("aActVp").textContent    = val(d.act_vp_hpa, " hPa");
+    document.getElementById("aRhStd").textContent    = val(d.rh_std, " %");
+    document.getElementById("aDrhDt").textContent    = val(d.drh_dt, " %/s");
+
+    document.getElementById("aLightRaw").textContent  = val(d.light_raw);
+    document.getElementById("aLightV").textContent    = val(d.light_voltage, " V");
+    document.getElementById("aBrightPct").textContent = val(d.brightness_pct, " %");
+    document.getElementById("aLightStd").textContent  = val(d.light_std);
+    document.getElementById("aDlightDt").textContent  = val(d.dlight_dt, " /s");
+    document.getElementById("aNoiseP2p").textContent  = val(d.noise_p2p);
+    document.getElementById("aNoiseStd").textContent  = val(d.noise_std);
+    document.getElementById("aDnoiseDt").textContent  = val(d.dnoise_dt, " /s");
+
+    document.getElementById("errLight").innerHTML = errBadge(d.light_err);
+    document.getElementById("errMic").innerHTML   = errBadge(d.mic_err);
+    document.getElementById("errDht").innerHTML   = errBadge(d.dht_err);
+    document.getElementById("aPcTime").textContent = val(d.pc_time);
+    document.getElementById("aTimeS").textContent  = val(d.time_s, " s");
+
+    if (d.noise_label && d.noise_label !== lastNoiseLabel) {
+      if (lastNoiseLabel !== "") addEvent(`Noise changed: ${lastNoiseLabel} → ${d.noise_label}`);
+      lastNoiseLabel = d.noise_label;
+    }
+  }
+
+  function connectWS() {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
+    ws = new WebSocket("ws://localhost:8000/ws");
+    window.ws = ws;
+
+    ws.onopen = () => {
+      console.log("WebSocket connected");
+      if (statusEl) statusEl.textContent = "Live mode: Arduino sensor stream active.";
+      addEvent("Connected to Arduino sensor stream.");
+
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const d = JSON.parse(event.data);
+        console.log("LIVE DATA:", d);
+
+        const sound = d.noise_p2p ?? 0;
+        const brightness = d.brightness_pct ?? 0;
+
+        const soundEl = document.getElementById("soundValue");
+        const soundUnit = document.getElementById("soundUnit");
+
+        if (soundEl && window.sensorState.sound) {
+          soundEl.textContent = d.noise_label ?? "--";
+        }
+        if (soundUnit) {
+          soundUnit.textContent = sound.toFixed(1);
+        }
+
+        window.renderData(
+          d.temp_c ?? 23,
+          d.humidity_pct ?? 48,
+          sound,
+          brightness
+        );
+
+        updateAnalytics(d);
+
+        if (timerEl) {
+          timerEl.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+        }
+      } catch (e) {
+        console.warn("WS parse error:", e);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket closed");
+      window.ws = null;
+      ws = null;
+
+      if (statusEl) statusEl.textContent = "Disconnected — waiting to reconnect to Arduino stream.";
+      addEvent("WebSocket disconnected. Retrying in 3s...");
+
+      if (!reconnectTimer) {
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null;
+          connectWS();
+        }, 3000);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.warn("WebSocket error:", err);
+    };
+  }
+
+  connectWS();
+    </script>
   </body>
 </html>
