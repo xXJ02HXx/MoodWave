@@ -7,26 +7,41 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="login-page">
-    <main class="login-card">
-      <h1>Login</h1>
+    <div class="login-ambient login-ambient-one"></div>
+    <div class="login-ambient login-ambient-two"></div>
 
-      <div class="mode-row">
-        <button id="loginModeBtn" class="btn" type="button">Login</button>
-        <button id="registerModeBtn" class="btn btn-secondary" type="button">Create Account</button>
-      </div>
+    <main class="login-shell">
+      <section class="login-showcase">
+        <p class="login-kicker">MoodWave Account</p>
+        <h1>Sign in to keep track of your MoodWave!</h1>
+        <div class="login-logo-placeholder">
+          <span>Logo Placeholder</span>
+        </div>
+      </section>
 
-      <form id="authForm" class="login-form">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" required />
+      <section class="login-card">
+        <p class="login-card-eyebrow">Access MoodWave</p>
+        <h2 class="login-card-title">Login</h2>
+        <p class="login-card-subtitle">Enter your account details or create a new profile.</p>
 
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" required />
+        <div class="mode-row">
+          <button id="loginModeBtn" class="btn" type="button">Login</button>
+          <button id="registerModeBtn" class="btn btn-secondary" type="button">Create Account</button>
+        </div>
 
-        <button id="submitBtn" class="btn" type="submit">Login</button>
-      </form>
+        <form id="authForm" class="login-form">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" required />
 
-      <p id="loginMessage" class="login-message"></p>
-      <a class="back-link" href="/">Back to main page</a>
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" required />
+
+          <button id="submitBtn" class="btn btn-filled login-submit" type="submit">Login</button>
+        </form>
+
+        <p id="loginMessage" class="login-message"></p>
+        <a class="back-link" href="/">Back to main page</a>
+      </section>
     </main>
 
     <script src="login.js"></script>

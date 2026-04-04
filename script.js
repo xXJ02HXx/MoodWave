@@ -45,6 +45,7 @@ const presetButtons    = document.querySelectorAll(".preset-card, .preset-btn");
 // Music player
 const playerTrack  = document.getElementById("playerTrack");
 const playerPlayBtn = document.getElementById("playerPlayBtn");
+const playerSkipBtn = document.getElementById("playerSkipBtn");
 const musicPlayer  = document.getElementById("musicPlayer");
 
 // ── STATE ──
@@ -55,6 +56,14 @@ const events = [];
 let selectedGoal   = "study";
 let showFahrenheit = false;
 const isTestLabPage = Boolean(document.getElementById("test-lab"));
+const isDashboardPage = Boolean(document.getElementById("dashboardClock"));
+const isLandingPage = Boolean(document.getElementById("heroSection")) && !isTestLabPage && !isDashboardPage;
+const landingPageAudio = isLandingPage ? new Audio("/Audio/Chill1.mp3") : null;
+
+if (landingPageAudio) {
+  landingPageAudio.loop = true;
+  landingPageAudio.preload = "none";
+}
 
 // ─────────────────────────────────────────────
 // TEMPERATURE HELPERS
@@ -530,7 +539,7 @@ async function resumePlayer() {
 // Uses a 2-reading debounce so a single noisy spike doesn't
 // cause an unwanted crossfade.
 function updatePlayerTrack(mood, condition) {
-  if (isTestLabPage) return;
+  if (isTestLabPage || isLandingPage) return;
   const idx = CONDITION_TRACK_OVERRIDES[condition] ?? MOOD_TRACK_MAP[mood] ?? currentTrackIndex;
 
   // Always update the label when not actively playing
@@ -558,6 +567,25 @@ function updatePlayerTrack(mood, condition) {
 
 if (playerPlayBtn) {
   playerPlayBtn.addEventListener("click", async () => {
+    if (isLandingPage && landingPageAudio) {
+      if (landingPageAudio.paused) {
+        try {
+          await landingPageAudio.play();
+          playerPlaying = true;
+          playerPlayBtn.textContent = "⏸";
+          if (musicPlayer) musicPlayer.classList.remove("paused");
+        } catch (error) {
+          console.warn("MoodWave audio:", error.message);
+        }
+      } else {
+        landingPageAudio.pause();
+        playerPlaying = false;
+        playerPlayBtn.textContent = "▶";
+        if (musicPlayer) musicPlayer.classList.add("paused");
+      }
+      return;
+    }
+
     // First click ever: create context and start playing
     if (!audioCtx || !slot[activeSlot].source) {
       await playTrack(currentTrackIndex, false);
@@ -689,6 +717,13 @@ document.querySelectorAll("[data-panel]").forEach((btn) => {
 
 document.addEventListener("DOMContentLoaded", () => {
   switchPanel("what");
+
+  if (isLandingPage) {
+    if (playerTrack) playerTrack.textContent = "Chill1.mp3 — Main page audio test";
+    if (playerPlayBtn) playerPlayBtn.textContent = "▶";
+    if (playerSkipBtn) playerSkipBtn.style.display = "none";
+    if (musicPlayer) musicPlayer.classList.add("paused");
+  }
 });
 
 // ─────────────────────────────────────────────
