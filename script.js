@@ -711,17 +711,20 @@ function stopSlot(idx)
 }
 
 // start playing a file in the specified buffer
-function startSlot(idx, buffer) 
-{
+function startSlot(idx, buffer) {
   const ctx = getAudioCtx();
   stopSlot(idx);
   const src = ctx.createBufferSource();
   src.buffer = buffer;
-  // No native loop — scheduleLoop handles seamless self-crossfade
+  src.loop   = true;
   src.connect(slot[idx].dryGain);
   src.connect(slot[idx].reverb);
   src.start();
   slot[idx].source = src;
+
+  // Apply reverb immediately based on current brightness
+  const wetAmount = 1 - Math.min(latestSensorValues.brightness / 600, 1);
+  setReverb(idx, wetAmount, 0.01); // near-instant, no fade on start
 }
 
 // set Reverb
