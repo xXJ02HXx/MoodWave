@@ -148,11 +148,19 @@ function renderClock() {
 // ─────────────────────────────────────────────
 // RENDER SENSOR DATA
 // ─────────────────────────────────────────────
-function renderData(temperature, humidity, sound, brightness) {
+function renderData(temperature, humidity, sound, brightness) 
+{
   latestSensorValues.temperature = temperature;
   latestSensorValues.humidity    = humidity;
   latestSensorValues.sound       = sound;
   latestSensorValues.brightness  = brightness;
+
+  temp = 0;
+  if(temperature < 17) temp = 1;
+  else if(temperature < 22) temp = 2;
+  else if(temperature < 25.5) temp = 3;
+  else temp = 4;
+
 
   if (tempValueEl) {
     if (sensorState.temperature) {
@@ -179,7 +187,17 @@ function renderData(temperature, humidity, sound, brightness) {
   if (roomCondition) roomCondition.textContent = condition;
   if (spaceAdvice)   spaceAdvice.textContent   = inferAdvice(condition, mood);
 
-  updatePlayerTrack(mood, condition);
+  // determine time of day 
+  h = now.getHours();
+  time = 0;
+  if(h < 6) time = 3;
+  else if(h < 12) time = 1;
+  else if(h < 20) time = 2;
+  else time = 3;
+
+  
+
+  updatePlayerTrack(time, temp);
 }
 window.renderData = renderData;
 
@@ -394,20 +412,35 @@ function updateLabOutput() {
   const fahr        = cToF(temperature).toFixed(0);
   const profile     = generateMusicProfile(temperature, light, noise, humidity, selectedGoal);
 
+  // Same temp bands as renderData()
+  let temp = 0;
+  if      (temperature < 17)   temp = 1;
+  else if (temperature < 22)   temp = 2;
+  else if (temperature < 25.5) temp = 3;
+  else                          temp = 4;
+
+  // Same time bands as renderData(), but driven by light since lab has no clock
+  let time = 0;
+  if      (light >= 700) time = 1; // bright = morning
+  else if (light >= 200) time = 2; // mid = noon
+  else                   time = 3; // dim = night
+
+  const trackIdx   = 4 * (time - 1) + (temp - 1); // -1 because temp is 1-based, array is 0-based
+  const trackLabel = TRACKS[trackIdx]?.label ?? profile.title;
+
   if (labTempDisplay)   labTempDisplay.textContent   = `${temperature}°C / ${fahr}°F`;
-  if (labLightValue)   labLightValue.textContent   = `${light} lux`;
-  if (labNoiseValue)   labNoiseValue.textContent   = noiseLabel(noise);
-  if (labHumidityValue) labHumidityValue.textContent = `${humidity}%`;
-  if (labMusicTitle)    labMusicTitle.textContent    = profile.title;
-  if (labMusicSummary)  labMusicSummary.textContent  = profile.summary;
-  if (labRoomType)      labRoomType.textContent      = profile.roomType;
-  if (labGoalValue)     labGoalValue.textContent     = selectedGoal.charAt(0).toUpperCase() + selectedGoal.slice(1);
-  if (labMusicStyle)    labMusicStyle.textContent    = profile.style;
-  if (labEnergy)        labEnergy.textContent        = profile.energy;
+  if (labLightValue)    labLightValue.textContent     = `${light} lux`;
+  if (labNoiseValue)    labNoiseValue.textContent     = noiseLabel(noise);
+  if (labHumidityValue) labHumidityValue.textContent  = `${humidity}%`;
+  if (labMusicTitle)    labMusicTitle.textContent     = trackLabel;
+  if (labMusicSummary)  labMusicSummary.textContent   = profile.summary;
+  if (labRoomType)      labRoomType.textContent       = profile.roomType;
+  if (labGoalValue)     labGoalValue.textContent      = selectedGoal.charAt(0).toUpperCase() + selectedGoal.slice(1);
+  if (labMusicStyle)    labMusicStyle.textContent     = profile.style;
+  if (labEnergy)        labEnergy.textContent         = profile.energy;
   updateLabVisuals(temperature, light, noise);
 
-  // Sync lab result to player when in Test Lab
-  if (isTestLabPage && playerTrack) playerTrack.textContent = `${profile.title} — ${profile.style}`;
+  if (isTestLabPage && playerTrack) playerTrack.textContent = `${trackLabel} — ${profile.style}`;
 }
 
 function applyPreset(presetName) {
@@ -532,6 +565,8 @@ function startSlot(idx, buffer)
   slot[idx].source = src;
 }
 
+
+
 // Crossfade from fromIdx slot to toIdx slot over FADE_DURATION seconds.
 function crossfade(fromIdx, toIdx) {
   const ctx  = getAudioCtx();
@@ -597,6 +632,20 @@ async function playTrack(index, crossfadeIn = true) {
   }
 }
 
+function buildImpulse(ctx, duration = 2.5, decay = 3.0) {
+  const rate    = ctx.sampleRate;
+  const length  = rate * duration;
+  const impulse = ctx.createBuffer(2, length, rate);
+
+  for (let ch = 0; ch < 2; ch++) {
+    const data = impulse.getChannelData(ch);
+    for (let i = 0; i < length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+    }
+  }
+  return impulse;
+}
+
 function pausePlayer() {
   if (!audioCtx) return;
   const ctx = getAudioCtx();
@@ -628,7 +677,8 @@ async function resumePlayer() {
 // Called by renderData() every time sensor values update.
 // Uses a 2-reading debounce so a single noisy spike doesn't
 // cause an unwanted crossfade.
-function updatePlayerTrack(time, temp) {
+function updatePlayerTrack(time, temp) 
+{
   if (isTestLabPage || isLandingPage) return;
   const idx = 4*(time-1) + temp;
 
@@ -647,7 +697,7 @@ function updatePlayerTrack(time, temp) {
     moodIndexCount = 1;
   }
 
-  if (moodIndexCount >= 2 && idx !== currentTrackIndex) {
+  if (idx !== currentTrackIndex) {
     moodIndexCount = 0;
     playTrack(idx, true);
   }
@@ -828,10 +878,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (isLandingPage) {
     if (playerTrack) playerTrack.textContent = "Chill1.mp3 — Main page audio test";
     if (playerPlayBtn) playerPlayBtn.textContent = "▶";
-    if (playerSkipBtn) 
-    {
-      playTrack(currentTrackIndex, true);
-    }
+    if (playerSkipBtn) playerSkipBtn.style.display = "none";
     if (musicPlayer) musicPlayer.classList.add("paused");
   }
 });
