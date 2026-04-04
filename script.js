@@ -40,7 +40,7 @@ const labGoalValue     = document.getElementById("labGoalValue");
 const labMusicStyle    = document.getElementById("labMusicStyle");
 const labEnergy        = document.getElementById("labEnergy");
 const goalButtons      = document.querySelectorAll(".goal-btn");
-const presetButtons   = document.querySelectorAll(".preset-card");
+const presetButtons    = document.querySelectorAll(".preset-card, .preset-btn");
 
 // Music player
 const playerTrack  = document.getElementById("playerTrack");
