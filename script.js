@@ -40,30 +40,28 @@ const labGoalValue     = document.getElementById("labGoalValue");
 const labMusicStyle    = document.getElementById("labMusicStyle");
 const labEnergy        = document.getElementById("labEnergy");
 const goalButtons      = document.querySelectorAll(".goal-btn");
-const presetButtons    = document.querySelectorAll(".preset-card, .preset-btn");
+const presetButtons    = document.querySelectorAll(".preset-btn");
 
 // Music player
-const playerTrack  = document.getElementById("playerTrack");
+const playerTrack   = document.getElementById("playerTrack");
 const playerPlayBtn = document.getElementById("playerPlayBtn");
 const playerSkipBtn = document.getElementById("playerSkipBtn");
-const musicPlayer  = document.getElementById("musicPlayer");
+const musicPlayer   = document.getElementById("musicPlayer");
 
 // ── STATE ──
-const sensorState = { temperature: true, humidity: true, sound: true, brightness: true };
+// Exposed on window so the inline WS block in index.html can access them
+window.sensorState = { temperature: true, humidity: true, sound: true, brightness: true };
 const latestSensorValues = { temperature: 23, humidity: 48, sound: 40, brightness: 380 };
+window.latestSensorValues = latestSensorValues;
+window.ws = null;
 
 const events = [];
 let selectedGoal   = "study";
 let showFahrenheit = false;
-const isTestLabPage = Boolean(document.getElementById("test-lab"));
-const isDashboardPage = Boolean(document.getElementById("dashboardClock"));
-const isLandingPage = Boolean(document.getElementById("heroSection")) && !isTestLabPage && !isDashboardPage;
-const landingPageAudio = isLandingPage ? new Audio("/Audio/Chill1.mp3") : null;
+let playerPlaying  = true;
 
-if (landingPageAudio) {
-  landingPageAudio.loop = true;
-  landingPageAudio.preload = "none";
-}
+// Placeholder interval handle — WS block can clear this
+window._placeholderInterval = null;
 
 // ─────────────────────────────────────────────
 // TEMPERATURE HELPERS
@@ -80,7 +78,7 @@ function tempClass(celsius) {
   return "temp-lava";
 }
 
-const TEMP_CLASSES = ["temp-ice", "temp-cold", "temp-cool", "temp-ok", "temp-warm", "temp-hot", "temp-lava"];
+const TEMP_CLASSES = ["temp-ice","temp-cold","temp-cool","temp-ok","temp-warm","temp-hot","temp-lava"];
 
 function applyTempStyling(celsius) {
   if (!tempCard) return;
@@ -101,8 +99,8 @@ function inferMood(temperature, humidity, sound, brightness) {
 
 function inferRoomCondition(temperature, humidity, sound, brightness) {
   if (temperature > 29 && humidity > 60) return "Hot and stuffy";
-  if (sound > 72)                         return "Overstimulated";
-  if (brightness < 150 && sound < 40)    return "Dim and quiet";
+  if (sound > 72)                        return "Overstimulated";
+  if (brightness < 150 && sound < 40)   return "Dim and quiet";
   if (brightness > 650 && temperature < 25) return "Bright and alert";
   return "Balanced and usable";
 }
@@ -116,15 +114,15 @@ function inferAdvice(condition, mood) {
 }
 
 // ─────────────────────────────────────────────
-// EVENT LOG
+// EVENT LOG — exposed on window for WS block
 // ─────────────────────────────────────────────
-function addEvent(message) {
+window.addEvent = function(message) {
   const timestamp = new Date().toLocaleTimeString();
   events.unshift(`${timestamp} — ${message}`);
   if (events.length > 6) events.length = 6;
   if (eventLog) eventLog.innerHTML = events.map((e) => `<li>${e}</li>`).join("");
   if (logCount) logCount.textContent = `${events.length} events`;
-}
+};
 
 // ─────────────────────────────────────────────
 // CLOCK
@@ -139,16 +137,17 @@ function renderClock() {
 }
 
 // ─────────────────────────────────────────────
-// RENDER SENSOR DATA
+// RENDER SENSOR DATA — exposed on window for WS block
 // ─────────────────────────────────────────────
-function renderData(temperature, humidity, sound, brightness) {
+window.renderData = function(temperature, humidity, sound, brightness) {
   latestSensorValues.temperature = temperature;
   latestSensorValues.humidity    = humidity;
   latestSensorValues.sound       = sound;
   latestSensorValues.brightness  = brightness;
 
+  // Temperature
   if (tempValueEl) {
-    if (sensorState.temperature) {
+    if (window.sensorState.temperature) {
       tempValueEl.textContent = showFahrenheit
         ? cToF(temperature).toFixed(1)
         : temperature.toFixed(1);
@@ -159,11 +158,10 @@ function renderData(temperature, humidity, sound, brightness) {
   if (tempUnitEl)    tempUnitEl.textContent    = showFahrenheit ? "°F" : "°C";
   if (unitToggleBtn) unitToggleBtn.textContent = showFahrenheit ? "°C" : "°F";
 
-  if (sensorState.temperature) applyTempStyling(temperature);
+  if (window.sensorState.temperature) applyTempStyling(temperature);
 
-  if (humidityValue)   humidityValue.textContent   = sensorState.humidity   ? humidity.toFixed(0)   : "OFF";
-  if (soundValue)      soundValue.textContent       = sensorState.sound      ? sound.toFixed(0)      : "OFF";
-  if (brightnessValue) brightnessValue.textContent  = sensorState.brightness ? brightness.toFixed(0) : "OFF";
+  if (humidityValue)   humidityValue.textContent   = window.sensorState.humidity   ? humidity.toFixed(0)   : "OFF";
+  if (brightnessValue) brightnessValue.textContent = window.sensorState.brightness ? brightness.toFixed(0) : "OFF";
 
   const mood      = inferMood(temperature, humidity, sound, brightness);
   const condition = inferRoomCondition(temperature, humidity, sound, brightness);
@@ -173,17 +171,25 @@ function renderData(temperature, humidity, sound, brightness) {
   if (spaceAdvice)   spaceAdvice.textContent   = inferAdvice(condition, mood);
 
   updatePlayerTrack(mood, condition);
-}
+};
 
 // ─────────────────────────────────────────────
 // PLACEHOLDER DATA GENERATOR
 // ─────────────────────────────────────────────
 function generatePlaceholderData() {
-  const temperature = sensorState.temperature ? 20 + Math.random() * 14   : latestSensorValues.temperature;
-  const humidity    = sensorState.humidity    ? 35 + Math.random() * 32   : latestSensorValues.humidity;
-  const sound       = sensorState.sound       ? 28 + Math.random() * 52   : latestSensorValues.sound;
-  const brightness  = sensorState.brightness  ? 100 + Math.random() * 760 : latestSensorValues.brightness;
-  renderData(temperature, humidity, sound, brightness);
+  const temperature = window.sensorState.temperature ? 20 + Math.random() * 14   : latestSensorValues.temperature;
+  const humidity    = window.sensorState.humidity    ? 35 + Math.random() * 32   : latestSensorValues.humidity;
+  const sound       = window.sensorState.sound       ? 28 + Math.random() * 52   : latestSensorValues.sound;
+  const brightness  = window.sensorState.brightness  ? 100 + Math.random() * 760 : latestSensorValues.brightness;
+
+  // Placeholder noise display
+  if (soundValue && window.sensorState.sound) {
+    soundValue.textContent = sound.toFixed(0);
+    const su = document.getElementById("soundUnit");
+    if (su) su.textContent = "dB (sim)";
+  }
+
+  window.renderData(temperature, humidity, sound, brightness);
   if (eventTimer) eventTimer.textContent = `Updated ${new Date().toLocaleTimeString()}`;
 }
 
@@ -191,7 +197,7 @@ function generatePlaceholderData() {
 // SENSOR CARD TOGGLE STATE
 // ─────────────────────────────────────────────
 function updateSensorCardState() {
-  Object.entries(sensorState).forEach(([sensor, active]) => {
+  Object.entries(window.sensorState).forEach(([sensor, active]) => {
     const button = document.querySelector(`.toggle-btn[data-sensor="${sensor}"]`);
     const card   = document.getElementById(`card-${sensor}`);
     if (button) {
@@ -214,46 +220,6 @@ function noiseLabel(value) {
   if (value < 60) return "Busy";
   if (value < 80) return "Loud";
   return "RAVE!";
-}
-
-function gradientTrack(inputEl, percent, active, rest) {
-  if (!inputEl) return;
-  inputEl.style.background = `linear-gradient(90deg, ${active} 0%, ${active} ${percent}%, ${rest} ${percent}%, ${rest} 100%)`;
-}
-
-function updateLabVisuals(temperature, light, noise) {
-  const tempPct = ((temperature - 0) / 50) * 100;
-  const noisePct = ((noise - 0) / 100) * 100;
-
-  if (labTemp) {
-    labTemp.style.background = "linear-gradient(90deg, #2a8bff 0%, #70dc8a 50%, #ea5a5a 100%)";
-  }
-  if (labLight) {
-    labLight.style.background = "linear-gradient(90deg, #f7fbff 0%, #fff3c4 55%, #ffd459 100%)";
-  }
-  gradientTrack(labNoise, noisePct, "#66d1ff", "#ff8f3f");
-
-  if (labTempDisplay) {
-    let tempColor = "#71cbff";
-    if (temperature <= 12) tempColor = "#5ca8ff";
-    else if (temperature >= 33) tempColor = "#ff6e58";
-    else if (temperature >= 21 && temperature <= 27) tempColor = "#7dff9a";
-    labTempDisplay.style.color = tempColor;
-  }
-
-  if (labLightValue) {
-    const warm = Math.min(255, Math.max(190, Math.round(190 + (light / 1000) * 65)));
-    labLightValue.style.color = `rgb(255, ${warm}, 120)`;
-  }
-
-  if (labNoiseValue) {
-    const quiet = noise <= 25;
-    const loud = noise >= 70;
-    labNoiseValue.style.textTransform = loud ? "uppercase" : "lowercase";
-    labNoiseValue.style.fontSize = quiet ? "0.78rem" : loud ? "1rem" : "0.88rem";
-    labNoiseValue.style.fontWeight = loud ? "800" : quiet ? "500" : "650";
-    labNoiseValue.style.letterSpacing = loud ? "0.04em" : "0.01em";
-  }
 }
 
 function generateMusicProfile(temperature, light, noise, humidity, goal) {
@@ -308,8 +274,8 @@ function updateLabOutput() {
   const profile     = generateMusicProfile(temperature, light, noise, humidity, selectedGoal);
 
   if (labTempDisplay)   labTempDisplay.textContent   = `${temperature}°C / ${fahr}°F`;
-  if (labLightValue)   labLightValue.textContent   = `${light} lux`;
-  if (labNoiseValue)   labNoiseValue.textContent   = noiseLabel(noise);
+  if (labLightValue)    labLightValue.textContent    = `${light} lux`;
+  if (labNoiseValue)    labNoiseValue.textContent    = noiseLabel(noise);
   if (labHumidityValue) labHumidityValue.textContent = `${humidity}%`;
   if (labMusicTitle)    labMusicTitle.textContent    = profile.title;
   if (labMusicSummary)  labMusicSummary.textContent  = profile.summary;
@@ -317,283 +283,80 @@ function updateLabOutput() {
   if (labGoalValue)     labGoalValue.textContent     = selectedGoal.charAt(0).toUpperCase() + selectedGoal.slice(1);
   if (labMusicStyle)    labMusicStyle.textContent    = profile.style;
   if (labEnergy)        labEnergy.textContent        = profile.energy;
-  updateLabVisuals(temperature, light, noise);
 
-  // Sync lab result to player when in Test Lab
-  if (isTestLabPage && playerTrack) playerTrack.textContent = `${profile.title} — ${profile.style}`;
+  if (playerTrack) playerTrack.textContent = `${profile.title} — ${profile.style}`;
 }
 
 function applyPreset(presetName) {
   if (!labTemp || !labLight || !labNoise || !labHumidity) return;
 
   const presets = {
-    sauna:     { temperature: 42, light: 380,  noise: 24, humidity: 82, goal: "relax"    },
-    igloo:     { temperature: 2,  light: 700,  noise: 12, humidity: 30, goal: "focus"    },
-    massage:   { temperature: 27, light: 170,  noise: 18, humidity: 55, goal: "meditate" },
-    library:   { temperature: 22, light: 450,  noise: 16, humidity: 42, goal: "study"    },
-    coffee:    { temperature: 24, light: 520,  noise: 56, humidity: 48, goal: "focus"    },
-    nightclub: { temperature: 31, light: 120,  noise: 88, humidity: 64, goal: "workout"  },
+    sauna:     { temperature: 42, light: 380, noise: 24, humidity: 82, goal: "relax"    },
+    igloo:     { temperature: 2,  light: 700, noise: 12, humidity: 30, goal: "focus"    },
+    massage:   { temperature: 27, light: 170, noise: 18, humidity: 55, goal: "meditate" },
+    library:   { temperature: 22, light: 450, noise: 16, humidity: 42, goal: "study"    },
+    coffee:    { temperature: 24, light: 520, noise: 56, humidity: 48, goal: "focus"    },
+    nightclub: { temperature: 31, light: 120, noise: 88, humidity: 64, goal: "workout"  }
   };
 
   const preset = presets[presetName];
   if (!preset) return;
 
-  labTemp.value    = String(preset.temperature);
-  labLight.value   = String(preset.light);
-  labNoise.value   = String(preset.noise);
+  labTemp.value     = String(preset.temperature);
+  labLight.value    = String(preset.light);
+  labNoise.value    = String(preset.noise);
   labHumidity.value = String(preset.humidity);
-  selectedGoal     = preset.goal;
+  selectedGoal      = preset.goal;
 
   goalButtons.forEach((b) => {
     b.classList.toggle("active", b.dataset.goal === selectedGoal);
   });
 
-  addEvent(`Preset applied: ${presetName}`);
+  window.addEvent(`Preset applied: ${presetName}`);
   updateLabOutput();
 }
 
 // ─────────────────────────────────────────────
-// MUSIC PLAYER — Web Audio API with crossfade
+// MUSIC PLAYER
 // ─────────────────────────────────────────────
-
-const TRACKS = 
-[
-  { label: "Focused Pulse — Calm electronic focus",  src: "/audio/Chill1.mp3" },
-  { label: "Calm Drift — Warm ambient calm",         src: "/audio/Chill1.mp3"    },
-  { label: "Drive Mode — High-energy rhythm",        src: "/audio/Chill1.mp3"    },
-  { label: "Blue Hour — Deep ambient textures",      src: "/audio/Chill1.mp3"     },
-  { label: "Rain Logic — Lo-fi focus blend",         src: "/audio/Chill1.mp3"    },
-  { label: "Clear Signal — Minimal work state",      src: "/audio/Chill1.mp3"  },
-  { label: "Late Current — Evening wind-down",       src: "/audio/Chill1.mp3"  },
-  { label: "Noon Charge — Bright mid-energy pop",    src: "/audio/Chill1.mp3"   },
+const PLACEHOLDER_TRACKS = [
+  "Focused Pulse — Calm electronic focus",
+  "Calm Drift — Warm ambient calm",
+  "Drive Mode — High-energy rhythm",
+  "Blue Hour — Deep ambient textures",
+  "Rain Logic — Lo-fi focus blend",
+  "Clear Signal — Minimal work state",
+  "Late Current — Evening wind-down",
+  "Noon Charge — Bright mid-energy pop",
 ];
-
-// Mood → track index map (matches TRACKS array above)
-const MOOD_TRACK_MAP = 
-{
-  "Focused":        5, // Clear Signal
-  "High Energy":    2, // Drive Mode
-  "Calm / Relaxed": 1, // Calm Drift
-  "Balanced Flow":  7, // Noon Charge
-};
-const CONDITION_TRACK_OVERRIDES = {
-  "Hot and stuffy": 3, // Blue Hour
-};
-
-const FADE_DURATION = 2.5; // seconds
-
-// Two slots — we alternate between them for crossfading
-const slot = [
-  { gain: null, source: null },
-  { gain: null, source: null },
-];
-let activeSlot      = 0;
-let audioCtx        = null;
 let currentTrackIndex = 0;
-let playerPlaying   = false;
-let lastMoodIndex   = -1;      // debounce: track last mood-driven index
-let moodIndexCount  = 0;       // debounce: consecutive matching readings
 
-const bufferCache = new Map();
-
-// Lazily create (or return) the AudioContext and GainNodes.
-// Must not be called before a user gesture.
-function getAudioCtx() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    slot.forEach((s) => {
-      s.gain = audioCtx.createGain();
-      s.gain.gain.value = 0;
-      s.gain.connect(audioCtx.destination);
-    });
-  }
-  return audioCtx;
-}
-
-async function loadBuffer(src) {
-  if (bufferCache.has(src)) return bufferCache.get(src);
-  const res    = await fetch(src);
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${src}`);
-  const raw    = await res.arrayBuffer();
-  const buffer = await getAudioCtx().decodeAudioData(raw);
-  bufferCache.set(src, buffer);
-  return buffer;
-}
-
-function stopSlot(idx) 
-{
-  const s = slot[idx];
-  if (s.source) {
-    try { s.source.stop(); } catch (_) { /* already stopped */ }
-    s.source.disconnect();
-    s.source = null;
-  }
-}
-
-function startSlot(idx, buffer) 
-{
-  const ctx = getAudioCtx();
-  stopSlot(idx);
-  const src  = ctx.createBufferSource();
-  src.buffer = buffer;
-  src.loop   = true;
-  src.connect(slot[idx].gain);
-  src.start();
-  slot[idx].source = src;
-}
-
-// Crossfade from fromIdx slot to toIdx slot over FADE_DURATION seconds.
-function crossfade(fromIdx, toIdx) {
-  const ctx  = getAudioCtx();
-  const now  = ctx.currentTime;
-  const from = slot[fromIdx].gain.gain;
-  const to   = slot[toIdx].gain.gain;
-
-  // Fade out the current track
-  from.cancelScheduledValues(now);
-  from.setValueAtTime(Math.max(from.value, 0.001), now);
-  from.exponentialRampToValueAtTime(0.001, now + FADE_DURATION);
-
-  // Fade in the next track
-  to.cancelScheduledValues(now);
-  to.setValueAtTime(0.001, now);
-  to.exponentialRampToValueAtTime(1.0, now + FADE_DURATION);
-
-  // Once the fade is complete, stop the old slot to free resources
-  setTimeout(() => {
-    stopSlot(fromIdx);
-    slot[fromIdx].gain.gain.value = 0;
-  }, (FADE_DURATION + 0.15) * 1000);
-}
-
-// Main play function.
-// crossfadeIn = true  → smooth crossfade from whatever is currently playing
-// crossfadeIn = false → hard start (first play, or after a pause)
-async function playTrack(index, crossfadeIn = false) {
-  const ctx   = getAudioCtx();
-  await ctx.resume();
-
-  const track = TRACKS[index];
-  if (!track) return;
-
-  if (playerTrack) playerTrack.textContent = track.label;
-  currentTrackIndex = index;
-
-  try {
-    const buffer   = await loadBuffer(track.src);
-    const nextSlot = crossfadeIn ? 1 - activeSlot : activeSlot;
-
-    startSlot(nextSlot, buffer);
-
-    if (crossfadeIn && slot[activeSlot].source) {
-      crossfade(activeSlot, nextSlot);
-    } else {
-      // First play: fade in from silence
-      const g   = slot[nextSlot].gain.gain;
-      const now = ctx.currentTime;
-      g.cancelScheduledValues(now);
-      g.setValueAtTime(0.001, now);
-      g.exponentialRampToValueAtTime(1.0, now + FADE_DURATION);
-    }
-
-    activeSlot    = nextSlot;
-    playerPlaying = true;
-    if (playerPlayBtn) playerPlayBtn.textContent = "⏸";
-    if (musicPlayer)   musicPlayer.classList.remove("paused");
-
-  } catch (err) {
-    // Audio file not found — label-only placeholder mode, no crash
-    console.warn("MoodWave audio:", err.message);
-  }
-}
-
-function pausePlayer() {
-  if (!audioCtx) return;
-  const ctx = getAudioCtx();
-  const g   = slot[activeSlot].gain.gain;
-  const now = ctx.currentTime;
-  g.cancelScheduledValues(now);
-  g.setValueAtTime(Math.max(g.value, 0.001), now);
-  g.exponentialRampToValueAtTime(0.001, now + 0.4);
-  // Suspend the context after the short fade so CPU is released
-  setTimeout(() => ctx.suspend(), 500);
-  playerPlaying = false;
-  if (playerPlayBtn) playerPlayBtn.textContent = "▶";
-  if (musicPlayer)   musicPlayer.classList.add("paused");
-}
-
-async function resumePlayer() {
-  const ctx = getAudioCtx();
-  await ctx.resume();
-  const g   = slot[activeSlot].gain.gain;
-  const now = ctx.currentTime;
-  g.cancelScheduledValues(now);
-  g.setValueAtTime(0.001, now);
-  g.exponentialRampToValueAtTime(1.0, now + 0.4);
-  playerPlaying = true;
-  if (playerPlayBtn) playerPlayBtn.textContent = "⏸";
-  if (musicPlayer)   musicPlayer.classList.remove("paused");
-}
-
-// Called by renderData() every time sensor values update.
-// Uses a 2-reading debounce so a single noisy spike doesn't
-// cause an unwanted crossfade.
 function updatePlayerTrack(mood, condition) {
-  if (isTestLabPage || isLandingPage) return;
-  const idx = CONDITION_TRACK_OVERRIDES[condition] ?? MOOD_TRACK_MAP[mood] ?? currentTrackIndex;
-
-  // Always update the label when not actively playing
-  if (!playerPlaying) {
-    if (playerTrack) playerTrack.textContent = TRACKS[idx]?.label ?? "";
-    currentTrackIndex = idx;
-    return;
-  }
-
-  // Debounce: only crossfade after two consecutive readings agree on a new track
-  if (idx === lastMoodIndex) {
-    moodIndexCount++;
-  } else {
-    lastMoodIndex  = idx;
-    moodIndexCount = 1;
-  }
-
-  if (moodIndexCount >= 2 && idx !== currentTrackIndex) {
-    moodIndexCount = 0;
-    playTrack(idx, true);
+  const map = {
+    "Focused":       "Clear Signal — Minimal work state",
+    "High Energy":   "Drive Mode — High-energy rhythm",
+    "Calm / Relaxed":"Calm Drift — Warm ambient calm",
+    "Balanced Flow": "Noon Charge — Bright mid-energy pop",
+  };
+  if (playerTrack && playerPlaying) {
+    playerTrack.textContent = condition === "Hot and stuffy"
+      ? "Blue Hour — Deep ambient textures"
+      : (map[mood] || PLACEHOLDER_TRACKS[currentTrackIndex]);
   }
 }
-
-// ── Player button handlers ──
 
 if (playerPlayBtn) {
-  playerPlayBtn.addEventListener("click", async () => {
-    if (isLandingPage && landingPageAudio) {
-      if (landingPageAudio.paused) {
-        try {
-          await landingPageAudio.play();
-          playerPlaying = true;
-          playerPlayBtn.textContent = "⏸";
-          if (musicPlayer) musicPlayer.classList.remove("paused");
-        } catch (error) {
-          console.warn("MoodWave audio:", error.message);
-        }
-      } else {
-        landingPageAudio.pause();
-        playerPlaying = false;
-        playerPlayBtn.textContent = "▶";
-        if (musicPlayer) musicPlayer.classList.add("paused");
-      }
-      return;
-    }
+  playerPlayBtn.addEventListener("click", () => {
+    playerPlaying = !playerPlaying;
+    playerPlayBtn.textContent = playerPlaying ? "⏸" : "▶";
+    if (musicPlayer) musicPlayer.classList.toggle("paused", !playerPlaying);
+  });
+}
 
-    // First click ever: create context and start playing
-    if (!audioCtx || !slot[activeSlot].source) {
-      await playTrack(currentTrackIndex, false);
-    } else if (playerPlaying) {
-      pausePlayer();
-    } else {
-      await resumePlayer();
-    }
+if (playerSkipBtn) {
+  playerSkipBtn.addEventListener("click", () => {
+    currentTrackIndex = (currentTrackIndex + 1) % PLACEHOLDER_TRACKS.length;
+    if (playerTrack) playerTrack.textContent = PLACEHOLDER_TRACKS[currentTrackIndex];
   });
 }
 
@@ -603,13 +366,13 @@ if (playerPlayBtn) {
 if (unitToggleBtn) {
   unitToggleBtn.addEventListener("click", () => {
     showFahrenheit = !showFahrenheit;
-    renderData(
+    window.renderData(
       latestSensorValues.temperature,
       latestSensorValues.humidity,
       latestSensorValues.sound,
       latestSensorValues.brightness
     );
-    addEvent(`Temperature unit switched to ${showFahrenheit ? "°F" : "°C"}`);
+    window.addEvent(`Temperature unit switched to ${showFahrenheit ? "°F" : "°C"}`);
   });
 }
 
@@ -619,11 +382,22 @@ if (unitToggleBtn) {
 toggleButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const sensor = button.dataset.sensor;
-    if (!sensor || !(sensor in sensorState)) return;
-    sensorState[sensor] = !sensorState[sensor];
+    if (!sensor || !(sensor in window.sensorState)) return;
+
+    window.sensorState[sensor] = !window.sensorState[sensor];
     updateSensorCardState();
-    addEvent(`${sensor.charAt(0).toUpperCase() + sensor.slice(1)} sensor turned ${sensorState[sensor] ? "on" : "off"}`);
-    generatePlaceholderData();
+    window.addEvent(`${sensor.charAt(0).toUpperCase() + sensor.slice(1)} sensor turned ${window.sensorState[sensor] ? "on" : "off"}`);
+
+    if (!window.ws || window.ws.readyState !== WebSocket.OPEN) {
+      generatePlaceholderData();
+    } else {
+      window.renderData(
+        latestSensorValues.temperature,
+        latestSensorValues.humidity,
+        latestSensorValues.sound,
+        latestSensorValues.brightness
+      );
+    }
   });
 });
 
@@ -647,13 +421,11 @@ goalButtons.forEach((btn) => {
 });
 
 presetButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    applyPreset(btn.dataset.preset);
-  });
+  btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
 });
 
 // ─────────────────────────────────────────────
-// SESSION (login/logout nav)
+// SESSION
 // ─────────────────────────────────────────────
 async function loadSession() {
   if (!loginBtn || !sessionUser || !logoutBtn) return;
@@ -669,9 +441,7 @@ async function loadSession() {
       if (statusText) statusText.textContent = `Logged in as ${data.user.username}. Goals and room profiles saved to your account.`;
       return;
     }
-  } catch (_) {
-    // no session — defaults below
-  }
+  } catch (_) { /* no session */ }
   sessionUser.style.display = "none";
   logoutBtn.style.display   = "none";
   loginBtn.style.display    = "inline-block";
@@ -682,49 +452,10 @@ if (logoutBtn) {
     try { await fetch("/api/logout", { method: "POST" }); } catch (_) { /* ignore */ }
     sessionUser.style.display = "none";
     logoutBtn.style.display   = "none";
-    if (loginBtn)    loginBtn.style.display    = "inline-block";
-    if (statusText)  statusText.textContent    = "Logged out. Create an account to save goals and future room profiles.";
+    if (loginBtn) loginBtn.style.display = "inline-block";
+    if (statusText) statusText.textContent = "Logged out. Create an account to save goals and future room profiles.";
   });
 }
-
-// ─────────────────────────────────────────────
-// CONTENT PANEL TABS (landing page)
-// ─────────────────────────────────────────────
-function switchPanel(panelName) {
-  document.querySelectorAll(".content-panel").forEach((panel) => {
-    panel.classList.remove("active");
-  });
-  document.querySelectorAll("[data-panel]").forEach((btn) => {
-    btn.classList.remove("active");
-  });
-
-  const panel = document.getElementById(`panel-${panelName}`);
-  if (panel) {
-    panel.classList.add("active");
-    panel.scrollIntoView({ behavior: "smooth", block: "center" });
-  }
-
-  const btn = document.querySelector(`[data-panel="${panelName}"]`);
-  if (btn) btn.classList.add("active");
-}
-
-document.querySelectorAll("[data-panel]").forEach((btn) => {
-  btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    switchPanel(btn.dataset.panel);
-  });
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  switchPanel("what");
-
-  if (isLandingPage) {
-    if (playerTrack) playerTrack.textContent = "Chill1.mp3 — Main page audio test";
-    if (playerPlayBtn) playerPlayBtn.textContent = "▶";
-    if (playerSkipBtn) playerSkipBtn.style.display = "none";
-    if (musicPlayer) musicPlayer.classList.add("paused");
-  }
-});
 
 // ─────────────────────────────────────────────
 // INIT
@@ -734,4 +465,6 @@ updateLabOutput();
 generatePlaceholderData();
 renderClock();
 setInterval(renderClock, 1000);
-setInterval(generatePlaceholderData, 4000);
+
+// Start placeholder stream — WS block in index.html will take over when Arduino connects
+window._placeholderInterval = setInterval(generatePlaceholderData, 4000);
