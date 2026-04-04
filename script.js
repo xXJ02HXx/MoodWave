@@ -225,7 +225,16 @@ function renderData(temperature, humidity, sound, brightness)
   
 
   updatePlayerTrack(time, temp);
+  updateReverbFromBrightness(brightness);
 }
+
+function updateReverbFromBrightness(brightness) {
+  if (!audioCtx || !playerPlaying) return;
+  // bright room = dry, dark room = wet
+  const wetAmount = 1 - Math.min(brightness / 600, 1); // 0 at 600+ lux, 1 at 0 lux
+  setReverb(activeSlot, wetAmount);
+}
+
 window.renderData = renderData;
 
 // ─────────────────────────────────────────────
@@ -572,9 +581,21 @@ function getAudioCtx() {
     masterGain = audioCtx.createGain();
     masterGain.gain.value = isMuted ? 0 : 1;
     masterGain.connect(audioCtx.destination);
+    const impulse = buildImpulse(audioCtx);
     slot.forEach((s) => {
       s.gain = audioCtx.createGain();
       s.gain.gain.value = 0;
+
+      s.reverb  = audioCtx.createConvolver();
+      s.reverb.buffer = impulse;
+      s.dryGain = audioCtx.createGain();
+      s.wetGain = audioCtx.createGain();
+      s.dryGain.gain.value = 1.0;
+      s.wetGain.gain.value = 0.0;
+
+      s.dryGain.connect(s.gain);
+      s.reverb.connect(s.wetGain);
+      s.wetGain.connect(s.gain);
       s.gain.connect(masterGain);
     });
   }
@@ -591,6 +612,7 @@ async function loadBuffer(src) {
   return buffer;
 }
 
+
 function stopSlot(idx) 
 {
   const s = slot[idx];
@@ -605,23 +627,34 @@ function stopSlot(idx)
   }
 }
 
+// start playing a file in the specified buffer
 function startSlot(idx, buffer) 
 {
   const ctx = getAudioCtx();
-  if (slot[idx].stopTimer) {
-    clearTimeout(slot[idx].stopTimer);
-    slot[idx].stopTimer = null;
-  }
   stopSlot(idx);
-  const src  = ctx.createBufferSource();
+  const src = ctx.createBufferSource();
   src.buffer = buffer;
   src.loop   = true;
-  src.connect(slot[idx].gain);
+  src.connect(slot[idx].dryGain);
+  src.connect(slot[idx].reverb);
   src.start();
   slot[idx].source = src;
 }
 
-
+// set Reverb
+function setReverb(idx, wetAmount, fadeSecs = 2.0) {
+  if (!audioCtx || !slot[idx].wetGain) return;
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+  const wet = slot[idx].wetGain.gain;
+  const dry = slot[idx].dryGain.gain;
+  wet.cancelScheduledValues(now);
+  dry.cancelScheduledValues(now);
+  wet.setValueAtTime(Math.max(wet.value, 0.001), now);
+  dry.setValueAtTime(Math.max(dry.value, 0.001), now);
+  wet.exponentialRampToValueAtTime(Math.max(wetAmount, 0.001),       now + fadeSecs);
+  dry.exponentialRampToValueAtTime(Math.max(1 - wetAmount, 0.001),   now + fadeSecs);
+}
 
 // Crossfade from fromIdx slot to toIdx slot over FADE_DURATION seconds.
 function crossfade(fromIdx, toIdx) {
