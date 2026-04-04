@@ -25,37 +25,35 @@ const unitToggleBtn   = document.getElementById("unitToggleBtn");
 const tempCard        = document.getElementById("card-temperature");
 
 // Lab
-const labTemp         = document.getElementById("labTemp");
-const labLight        = document.getElementById("labLight");
-const labNoise        = document.getElementById("labNoise");
-const labHumidity     = document.getElementById("labHumidity");
-const labTempDisplay  = document.getElementById("labTempDisplay");
-const labLightValue   = document.getElementById("labLightValue");
-const labNoiseValue   = document.getElementById("labNoiseValue");
+const labTemp          = document.getElementById("labTemp");
+const labLight         = document.getElementById("labLight");
+const labNoise         = document.getElementById("labNoise");
+const labHumidity      = document.getElementById("labHumidity");
+const labTempDisplay   = document.getElementById("labTempDisplay");
+const labLightValue    = document.getElementById("labLightValue");
+const labNoiseValue    = document.getElementById("labNoiseValue");
 const labHumidityValue = document.getElementById("labHumidityValue");
-const labMusicTitle   = document.getElementById("labMusicTitle");
-const labMusicSummary = document.getElementById("labMusicSummary");
-const labRoomType     = document.getElementById("labRoomType");
-const labGoalValue    = document.getElementById("labGoalValue");
-const labMusicStyle   = document.getElementById("labMusicStyle");
-const labEnergy       = document.getElementById("labEnergy");
-const goalButtons     = document.querySelectorAll(".goal-btn");
-const presetButtons   = document.querySelectorAll(".preset-btn");
+const labMusicTitle    = document.getElementById("labMusicTitle");
+const labMusicSummary  = document.getElementById("labMusicSummary");
+const labRoomType      = document.getElementById("labRoomType");
+const labGoalValue     = document.getElementById("labGoalValue");
+const labMusicStyle    = document.getElementById("labMusicStyle");
+const labEnergy        = document.getElementById("labEnergy");
+const goalButtons      = document.querySelectorAll(".goal-btn");
+const presetButtons    = document.querySelectorAll(".preset-btn");
 
 // Music player
-const playerTrack     = document.getElementById("playerTrack");
-const playerPlayBtn   = document.getElementById("playerPlayBtn");
-const playerSkipBtn   = document.getElementById("playerSkipBtn");
-const musicPlayer     = document.getElementById("musicPlayer");
+const playerTrack  = document.getElementById("playerTrack");
+const playerPlayBtn = document.getElementById("playerPlayBtn");
+const musicPlayer  = document.getElementById("musicPlayer");
 
 // ── STATE ──
 const sensorState = { temperature: true, humidity: true, sound: true, brightness: true };
 const latestSensorValues = { temperature: 23, humidity: 48, sound: 40, brightness: 380 };
 
 const events = [];
-let selectedGoal  = "study";
+let selectedGoal   = "study";
 let showFahrenheit = false;
-let playerPlaying = true;
 
 // ─────────────────────────────────────────────
 // TEMPERATURE HELPERS
@@ -63,12 +61,12 @@ let playerPlaying = true;
 function cToF(c) { return c * 9 / 5 + 32; }
 
 function tempClass(celsius) {
-  if (celsius <= 0)        return "temp-ice";
-  if (celsius <= 8)        return "temp-cold";
-  if (celsius <= 17)       return "temp-cool";
-  if (celsius <= 24)       return "temp-ok";
-  if (celsius <= 30)       return "temp-warm";
-  if (celsius <= 36)       return "temp-hot";
+  if (celsius <= 0)  return "temp-ice";
+  if (celsius <= 8)  return "temp-cold";
+  if (celsius <= 17) return "temp-cool";
+  if (celsius <= 24) return "temp-ok";
+  if (celsius <= 30) return "temp-warm";
+  if (celsius <= 36) return "temp-hot";
   return "temp-lava";
 }
 
@@ -86,7 +84,7 @@ function applyTempStyling(celsius) {
 // ─────────────────────────────────────────────
 function inferMood(temperature, humidity, sound, brightness) {
   if (sound > 65 || temperature > 28) return "High Energy";
-  if (sound < 42 && brightness < 220)  return "Calm / Relaxed";
+  if (sound < 42 && brightness < 220) return "Calm / Relaxed";
   if (brightness > 480 && humidity < 55) return "Focused";
   return "Balanced Flow";
 }
@@ -100,10 +98,10 @@ function inferRoomCondition(temperature, humidity, sound, brightness) {
 }
 
 function inferAdvice(condition, mood) {
-  if (condition === "Hot and stuffy")   return "Lower heat or add cooler audio textures to reduce fatigue.";
-  if (condition === "Overstimulated")   return "Noise is pushing the room hard. Shift toward calmer layers.";
-  if (mood === "Focused")               return "The room is suitable for deep work and clean rhythmic focus tracks.";
-  if (mood === "Calm / Relaxed")        return "This room favors softer ambient music and lower percussion density.";
+  if (condition === "Hot and stuffy")  return "Lower heat or add cooler audio textures to reduce fatigue.";
+  if (condition === "Overstimulated")  return "Noise is pushing the room hard. Shift toward calmer layers.";
+  if (mood === "Focused")              return "The room is suitable for deep work and clean rhythmic focus tracks.";
+  if (mood === "Calm / Relaxed")       return "This room favors softer ambient music and lower percussion density.";
   return "MoodWave would keep the room balanced with adaptive mid-energy sound.";
 }
 
@@ -122,7 +120,7 @@ function addEvent(message) {
 // CLOCK
 // ─────────────────────────────────────────────
 function renderClock() {
-  const now  = new Date();
+  const now = new Date();
   if (dashboardClock) dashboardClock.textContent = now.toLocaleTimeString();
   if (dayPhase) {
     const h = now.getHours();
@@ -139,36 +137,31 @@ function renderData(temperature, humidity, sound, brightness) {
   latestSensorValues.sound       = sound;
   latestSensorValues.brightness  = brightness;
 
-  // Temperature — with unit toggle
   if (tempValueEl) {
     if (sensorState.temperature) {
-      if (showFahrenheit) {
-        tempValueEl.textContent = cToF(temperature).toFixed(1);
-      } else {
-        tempValueEl.textContent = temperature.toFixed(1);
-      }
+      tempValueEl.textContent = showFahrenheit
+        ? cToF(temperature).toFixed(1)
+        : temperature.toFixed(1);
     } else {
       tempValueEl.textContent = "OFF";
     }
   }
-  if (tempUnitEl) tempUnitEl.textContent = showFahrenheit ? "°F" : "°C";
+  if (tempUnitEl)    tempUnitEl.textContent    = showFahrenheit ? "°F" : "°C";
   if (unitToggleBtn) unitToggleBtn.textContent = showFahrenheit ? "°C" : "°F";
 
-  // Apply temperature card background
   if (sensorState.temperature) applyTempStyling(temperature);
 
-  if (humidityValue)   humidityValue.textContent   = sensorState.humidity    ? humidity.toFixed(0)   : "OFF";
-  if (soundValue)      soundValue.textContent       = sensorState.sound       ? sound.toFixed(0)      : "OFF";
-  if (brightnessValue) brightnessValue.textContent  = sensorState.brightness  ? brightness.toFixed(0) : "OFF";
+  if (humidityValue)   humidityValue.textContent   = sensorState.humidity   ? humidity.toFixed(0)   : "OFF";
+  if (soundValue)      soundValue.textContent       = sensorState.sound      ? sound.toFixed(0)      : "OFF";
+  if (brightnessValue) brightnessValue.textContent  = sensorState.brightness ? brightness.toFixed(0) : "OFF";
 
   const mood      = inferMood(temperature, humidity, sound, brightness);
   const condition = inferRoomCondition(temperature, humidity, sound, brightness);
 
-  if (spaceMood)    spaceMood.textContent    = mood;
+  if (spaceMood)     spaceMood.textContent     = mood;
   if (roomCondition) roomCondition.textContent = condition;
-  if (spaceAdvice)  spaceAdvice.textContent  = inferAdvice(condition, mood);
+  if (spaceAdvice)   spaceAdvice.textContent   = inferAdvice(condition, mood);
 
-  // Keep player track in sync with live mood
   updatePlayerTrack(mood, condition);
 }
 
@@ -176,9 +169,9 @@ function renderData(temperature, humidity, sound, brightness) {
 // PLACEHOLDER DATA GENERATOR
 // ─────────────────────────────────────────────
 function generatePlaceholderData() {
-  const temperature = sensorState.temperature ? 20 + Math.random() * 14  : latestSensorValues.temperature;
-  const humidity    = sensorState.humidity    ? 35 + Math.random() * 32  : latestSensorValues.humidity;
-  const sound       = sensorState.sound       ? 28 + Math.random() * 52  : latestSensorValues.sound;
+  const temperature = sensorState.temperature ? 20 + Math.random() * 14   : latestSensorValues.temperature;
+  const humidity    = sensorState.humidity    ? 35 + Math.random() * 32   : latestSensorValues.humidity;
+  const sound       = sensorState.sound       ? 28 + Math.random() * 52   : latestSensorValues.sound;
   const brightness  = sensorState.brightness  ? 100 + Math.random() * 760 : latestSensorValues.brightness;
   renderData(temperature, humidity, sound, brightness);
   if (eventTimer) eventTimer.textContent = `Updated ${new Date().toLocaleTimeString()}`;
@@ -196,7 +189,6 @@ function updateSensorCardState() {
       button.classList.toggle("toggle-off", !active);
     }
     if (card) card.classList.toggle("sensor-off", !active);
-    // Clear temp class if temperature sensor is off
     if (sensor === "temperature" && !active && tempCard) {
       TEMP_CLASSES.forEach((c) => tempCard.classList.remove(c));
     }
@@ -265,18 +257,18 @@ function updateLabOutput() {
   const fahr        = cToF(temperature).toFixed(0);
   const profile     = generateMusicProfile(temperature, light, noise, humidity, selectedGoal);
 
-  if (labTempDisplay)  labTempDisplay.textContent  = `${temperature}°C / ${fahr}°F`;
-  if (labLightValue)   labLightValue.textContent   = `${light} lux`;
-  if (labNoiseValue)   labNoiseValue.textContent   = noiseLabel(noise);
-  if (labHumidityValue) labHumidityValue.textContent = `${humidity}%`;
-  if (labMusicTitle)   labMusicTitle.textContent   = profile.title;
-  if (labMusicSummary) labMusicSummary.textContent = profile.summary;
-  if (labRoomType)     labRoomType.textContent     = profile.roomType;
-  if (labGoalValue)    labGoalValue.textContent    = selectedGoal.charAt(0).toUpperCase() + selectedGoal.slice(1);
-  if (labMusicStyle)   labMusicStyle.textContent   = profile.style;
-  if (labEnergy)       labEnergy.textContent       = profile.energy;
+  if (labTempDisplay)   labTempDisplay.textContent   = `${temperature}°C / ${fahr}°F`;
+  if (labLightValue)    labLightValue.textContent     = `${light} lux`;
+  if (labNoiseValue)    labNoiseValue.textContent     = noiseLabel(noise);
+  if (labHumidityValue) labHumidityValue.textContent  = `${humidity}%`;
+  if (labMusicTitle)    labMusicTitle.textContent     = profile.title;
+  if (labMusicSummary)  labMusicSummary.textContent   = profile.summary;
+  if (labRoomType)      labRoomType.textContent       = profile.roomType;
+  if (labGoalValue)     labGoalValue.textContent      = selectedGoal.charAt(0).toUpperCase() + selectedGoal.slice(1);
+  if (labMusicStyle)    labMusicStyle.textContent     = profile.style;
+  if (labEnergy)        labEnergy.textContent         = profile.energy;
 
-  // Sync lab result to player
+  // Sync lab result to player label
   if (playerTrack) playerTrack.textContent = `${profile.title} — ${profile.style}`;
 }
 
@@ -284,22 +276,22 @@ function applyPreset(presetName) {
   if (!labTemp || !labLight || !labNoise || !labHumidity) return;
 
   const presets = {
-    sauna:      { temperature: 42, light: 380, noise: 24, humidity: 82, goal: "relax" },
-    igloo:      { temperature: 2,  light: 700, noise: 12, humidity: 30, goal: "focus" },
-    massage:    { temperature: 27, light: 170, noise: 18, humidity: 55, goal: "meditate" },
-    library:    { temperature: 22, light: 450, noise: 16, humidity: 42, goal: "study" },
-    coffee:     { temperature: 24, light: 520, noise: 56, humidity: 48, goal: "focus" },
-    nightclub:  { temperature: 31, light: 120, noise: 88, humidity: 64, goal: "workout" }
+    sauna:     { temperature: 42, light: 380,  noise: 24, humidity: 82, goal: "relax"    },
+    igloo:     { temperature: 2,  light: 700,  noise: 12, humidity: 30, goal: "focus"    },
+    massage:   { temperature: 27, light: 170,  noise: 18, humidity: 55, goal: "meditate" },
+    library:   { temperature: 22, light: 450,  noise: 16, humidity: 42, goal: "study"    },
+    coffee:    { temperature: 24, light: 520,  noise: 56, humidity: 48, goal: "focus"    },
+    nightclub: { temperature: 31, light: 120,  noise: 88, humidity: 64, goal: "workout"  },
   };
 
   const preset = presets[presetName];
   if (!preset) return;
 
-  labTemp.value = String(preset.temperature);
-  labLight.value = String(preset.light);
-  labNoise.value = String(preset.noise);
+  labTemp.value    = String(preset.temperature);
+  labLight.value   = String(preset.light);
+  labNoise.value   = String(preset.noise);
   labHumidity.value = String(preset.humidity);
-  selectedGoal = preset.goal;
+  selectedGoal     = preset.goal;
 
   goalButtons.forEach((b) => {
     b.classList.toggle("active", b.dataset.goal === selectedGoal);
@@ -310,49 +302,242 @@ function applyPreset(presetName) {
 }
 
 // ─────────────────────────────────────────────
-// MUSIC PLAYER
+// MUSIC PLAYER — Web Audio API with crossfade
 // ─────────────────────────────────────────────
-const PLACEHOLDER_TRACKS = [
-  "Focused Pulse — Calm electronic focus",
-  "Calm Drift — Warm ambient calm",
-  "Drive Mode — High-energy rhythm",
-  "Blue Hour — Deep ambient textures",
-  "Rain Logic — Lo-fi focus blend",
-  "Clear Signal — Minimal work state",
-  "Late Current — Evening wind-down",
-  "Noon Charge — Bright mid-energy pop",
-];
-let currentTrackIndex = 0;
 
-function updatePlayerTrack(mood, condition) {
-  const map = {
-    "Focused":       "Clear Signal — Minimal work state",
-    "High Energy":   "Drive Mode — High-energy rhythm",
-    "Calm / Relaxed":"Calm Drift — Warm ambient calm",
-    "Balanced Flow": "Noon Charge — Bright mid-energy pop",
-  };
-  if (playerTrack && playerPlaying) {
-    const track = map[mood] || PLACEHOLDER_TRACKS[currentTrackIndex];
-    if (condition === "Hot and stuffy") {
-      playerTrack.textContent = "Blue Hour — Deep ambient textures";
-    } else {
-      playerTrack.textContent = track;
-    }
+/*
+  File layout expected on the server:
+    /audio/focused-pulse.mp3
+    /audio/calm-drift.mp3
+    /audio/drive-mode.mp3
+    /audio/blue-hour.mp3
+    /audio/rain-logic.mp3
+    /audio/clear-signal.mp3
+    /audio/late-current.mp3
+    /audio/noon-charge.mp3
+
+  If a file is missing the player falls back gracefully —
+  it updates the label text only (placeholder mode).
+*/
+
+const TRACKS = 
+[
+  { label: "Focused Pulse — Calm electronic focus",  src: "/audio/Chill1.mp3" },
+  { label: "Calm Drift — Warm ambient calm",         src: "/audio/Chill1.mp3"    },
+  { label: "Drive Mode — High-energy rhythm",        src: "/audio/Chill1.mp3"    },
+  { label: "Blue Hour — Deep ambient textures",      src: "/audio/Chill1.mp3"     },
+  { label: "Rain Logic — Lo-fi focus blend",         src: "/audio/Chill1.mp3"    },
+  { label: "Clear Signal — Minimal work state",      src: "/audio/Chill1.mp3"  },
+  { label: "Late Current — Evening wind-down",       src: "/audio/Chill1.mp3"  },
+  { label: "Noon Charge — Bright mid-energy pop",    src: "/audio/Chill1.mp3"   },
+];
+
+// Mood → track index map (matches TRACKS array above)
+const MOOD_TRACK_MAP = 
+{
+  "Focused":        5, // Clear Signal
+  "High Energy":    2, // Drive Mode
+  "Calm / Relaxed": 1, // Calm Drift
+  "Balanced Flow":  7, // Noon Charge
+};
+const CONDITION_TRACK_OVERRIDES = {
+  "Hot and stuffy": 3, // Blue Hour
+};
+
+const FADE_DURATION = 2.5; // seconds
+
+// Two slots — we alternate between them for crossfading
+const slot = [
+  { gain: null, source: null },
+  { gain: null, source: null },
+];
+let activeSlot      = 0;
+let audioCtx        = null;
+let currentTrackIndex = 0;
+let playerPlaying   = false;
+let lastMoodIndex   = -1;      // debounce: track last mood-driven index
+let moodIndexCount  = 0;       // debounce: consecutive matching readings
+
+const bufferCache = new Map();
+
+// Lazily create (or return) the AudioContext and GainNodes.
+// Must not be called before a user gesture.
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    slot.forEach((s) => {
+      s.gain = audioCtx.createGain();
+      s.gain.gain.value = 0;
+      s.gain.connect(audioCtx.destination);
+    });
+  }
+  return audioCtx;
+}
+
+async function loadBuffer(src) {
+  if (bufferCache.has(src)) return bufferCache.get(src);
+  const res    = await fetch(src);
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${src}`);
+  const raw    = await res.arrayBuffer();
+  const buffer = await getAudioCtx().decodeAudioData(raw);
+  bufferCache.set(src, buffer);
+  return buffer;
+}
+
+function stopSlot(idx) 
+{
+  const s = slot[idx];
+  if (s.source) {
+    try { s.source.stop(); } catch (_) { /* already stopped */ }
+    s.source.disconnect();
+    s.source = null;
   }
 }
 
-if (playerPlayBtn) {
-  playerPlayBtn.addEventListener("click", () => {
-    playerPlaying = !playerPlaying;
-    playerPlayBtn.textContent = playerPlaying ? "⏸" : "▶";
-    if (musicPlayer) musicPlayer.classList.toggle("paused", !playerPlaying);
-  });
+function startSlot(idx, buffer) 
+{
+  const ctx = getAudioCtx();
+  stopSlot(idx);
+  const src  = ctx.createBufferSource();
+  src.buffer = buffer;
+  src.loop   = true;
+  src.connect(slot[idx].gain);
+  src.start();
+  slot[idx].source = src;
 }
 
-if (playerSkipBtn) {
-  playerSkipBtn.addEventListener("click", () => {
-    currentTrackIndex = (currentTrackIndex + 1) % PLACEHOLDER_TRACKS.length;
-    if (playerTrack) playerTrack.textContent = PLACEHOLDER_TRACKS[currentTrackIndex];
+// Crossfade from fromIdx slot to toIdx slot over FADE_DURATION seconds.
+function crossfade(fromIdx, toIdx) {
+  const ctx  = getAudioCtx();
+  const now  = ctx.currentTime;
+  const from = slot[fromIdx].gain.gain;
+  const to   = slot[toIdx].gain.gain;
+
+  // Fade out the current track
+  from.cancelScheduledValues(now);
+  from.setValueAtTime(Math.max(from.value, 0.001), now);
+  from.exponentialRampToValueAtTime(0.001, now + FADE_DURATION);
+
+  // Fade in the next track
+  to.cancelScheduledValues(now);
+  to.setValueAtTime(0.001, now);
+  to.exponentialRampToValueAtTime(1.0, now + FADE_DURATION);
+
+  // Once the fade is complete, stop the old slot to free resources
+  setTimeout(() => {
+    stopSlot(fromIdx);
+    slot[fromIdx].gain.gain.value = 0;
+  }, (FADE_DURATION + 0.15) * 1000);
+}
+
+// Main play function.
+// crossfadeIn = true  → smooth crossfade from whatever is currently playing
+// crossfadeIn = false → hard start (first play, or after a pause)
+async function playTrack(index, crossfadeIn = false) {
+  const ctx   = getAudioCtx();
+  await ctx.resume();
+
+  const track = TRACKS[index];
+  if (!track) return;
+
+  if (playerTrack) playerTrack.textContent = track.label;
+  currentTrackIndex = index;
+
+  try {
+    const buffer   = await loadBuffer(track.src);
+    const nextSlot = crossfadeIn ? 1 - activeSlot : activeSlot;
+
+    startSlot(nextSlot, buffer);
+
+    if (crossfadeIn && slot[activeSlot].source) {
+      crossfade(activeSlot, nextSlot);
+    } else {
+      // First play: fade in from silence
+      const g   = slot[nextSlot].gain.gain;
+      const now = ctx.currentTime;
+      g.cancelScheduledValues(now);
+      g.setValueAtTime(0.001, now);
+      g.exponentialRampToValueAtTime(1.0, now + FADE_DURATION);
+    }
+
+    activeSlot    = nextSlot;
+    playerPlaying = true;
+    if (playerPlayBtn) playerPlayBtn.textContent = "⏸";
+    if (musicPlayer)   musicPlayer.classList.remove("paused");
+
+  } catch (err) {
+    // Audio file not found — label-only placeholder mode, no crash
+    console.warn("MoodWave audio:", err.message);
+  }
+}
+
+function pausePlayer() {
+  if (!audioCtx) return;
+  const ctx = getAudioCtx();
+  const g   = slot[activeSlot].gain.gain;
+  const now = ctx.currentTime;
+  g.cancelScheduledValues(now);
+  g.setValueAtTime(Math.max(g.value, 0.001), now);
+  g.exponentialRampToValueAtTime(0.001, now + 0.4);
+  // Suspend the context after the short fade so CPU is released
+  setTimeout(() => ctx.suspend(), 500);
+  playerPlaying = false;
+  if (playerPlayBtn) playerPlayBtn.textContent = "▶";
+  if (musicPlayer)   musicPlayer.classList.add("paused");
+}
+
+async function resumePlayer() {
+  const ctx = getAudioCtx();
+  await ctx.resume();
+  const g   = slot[activeSlot].gain.gain;
+  const now = ctx.currentTime;
+  g.cancelScheduledValues(now);
+  g.setValueAtTime(0.001, now);
+  g.exponentialRampToValueAtTime(1.0, now + 0.4);
+  playerPlaying = true;
+  if (playerPlayBtn) playerPlayBtn.textContent = "⏸";
+  if (musicPlayer)   musicPlayer.classList.remove("paused");
+}
+
+// Called by renderData() every time sensor values update.
+// Uses a 2-reading debounce so a single noisy spike doesn't
+// cause an unwanted crossfade.
+function updatePlayerTrack(mood, condition) {
+  const idx = CONDITION_TRACK_OVERRIDES[condition] ?? MOOD_TRACK_MAP[mood] ?? currentTrackIndex;
+
+  // Always update the label when not actively playing
+  if (!playerPlaying) {
+    if (playerTrack) playerTrack.textContent = TRACKS[idx]?.label ?? "";
+    currentTrackIndex = idx;
+    return;
+  }
+
+  // Debounce: only crossfade after two consecutive readings agree on a new track
+  if (idx === lastMoodIndex) {
+    moodIndexCount++;
+  } else {
+    lastMoodIndex  = idx;
+    moodIndexCount = 1;
+  }
+
+  if (moodIndexCount >= 2 && idx !== currentTrackIndex) {
+    moodIndexCount = 0;
+    playTrack(idx, true);
+  }
+}
+
+// ── Player button handlers ──
+
+if (playerPlayBtn) {
+  playerPlayBtn.addEventListener("click", async () => {
+    // First click ever: create context and start playing
+    if (!audioCtx || !slot[activeSlot].source) {
+      await playTrack(currentTrackIndex, false);
+    } else if (playerPlaying) {
+      pausePlayer();
+    } else {
+      await resumePlayer();
+    }
   });
 }
 
@@ -407,8 +592,7 @@ goalButtons.forEach((btn) => {
 
 presetButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
-    const presetName = btn.dataset.preset;
-    applyPreset(presetName);
+    applyPreset(btn.dataset.preset);
   });
 });
 
@@ -422,10 +606,10 @@ async function loadSession() {
     if (!res.ok) throw new Error("session check failed");
     const data = await res.json();
     if (data.authenticated) {
-      sessionUser.textContent      = data.user.username;
-      sessionUser.style.display    = "inline-block";
-      logoutBtn.style.display      = "inline-block";
-      loginBtn.style.display       = "none";
+      sessionUser.textContent   = data.user.username;
+      sessionUser.style.display = "inline-block";
+      logoutBtn.style.display   = "inline-block";
+      loginBtn.style.display    = "none";
       if (statusText) statusText.textContent = `Logged in as ${data.user.username}. Goals and room profiles saved to your account.`;
       return;
     }
@@ -442,8 +626,8 @@ if (logoutBtn) {
     try { await fetch("/api/logout", { method: "POST" }); } catch (_) { /* ignore */ }
     sessionUser.style.display = "none";
     logoutBtn.style.display   = "none";
-    if (loginBtn) loginBtn.style.display = "inline-block";
-    if (statusText) statusText.textContent = "Logged out. Create an account to save goals and future room profiles.";
+    if (loginBtn)    loginBtn.style.display    = "inline-block";
+    if (statusText)  statusText.textContent    = "Logged out. Create an account to save goals and future room profiles.";
   });
 }
 
@@ -451,41 +635,30 @@ if (logoutBtn) {
 // CONTENT PANEL TABS (landing page)
 // ─────────────────────────────────────────────
 function switchPanel(panelName) {
-  // Hide all panels
   document.querySelectorAll(".content-panel").forEach((panel) => {
     panel.classList.remove("active");
   });
-  
-  // Deactivate all buttons
   document.querySelectorAll("[data-panel]").forEach((btn) => {
     btn.classList.remove("active");
   });
-  
-  // Show selected panel
+
   const panel = document.getElementById(`panel-${panelName}`);
   if (panel) {
     panel.classList.add("active");
-    // Scroll panel into view with less aggressive offset
     panel.scrollIntoView({ behavior: "smooth", block: "center" });
   }
-  
-  // Highlight selected button
+
   const btn = document.querySelector(`[data-panel="${panelName}"]`);
-  if (btn) {
-    btn.classList.add("active");
-  }
+  if (btn) btn.classList.add("active");
 }
 
-// Attach click listeners to all data-panel buttons
 document.querySelectorAll("[data-panel]").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     e.preventDefault();
-    const panelName = btn.dataset.panel;
-    switchPanel(panelName);
+    switchPanel(btn.dataset.panel);
   });
 });
 
-// Set default active panel on page load
 document.addEventListener("DOMContentLoaded", () => {
   switchPanel("what");
 });
