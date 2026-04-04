@@ -482,13 +482,40 @@ function applyPreset(presetName) {
   if (!labTemp || !labLight || !labNoise || !labHumidity) return;
 
   const presets = {
+    library:   { temperature: 20, light: 210,  noise: 18, humidity: 46, goal: "study",    timeOfDay: "Late" },
+    office:    { temperature: 22, light: 520,  noise: 24, humidity: 42, goal: "study",    timeOfDay: "Midday" },
     sauna:     { temperature: 42, light: 860,  noise: 24, humidity: 82, goal: "relax",    timeOfDay: "Early" },
     igloo:     { temperature: 2,  light: 820,  noise: 12, humidity: 30, goal: "study",    timeOfDay: "Early" },
-    massage:   { temperature: 21, light: 180,  noise: 18, humidity: 55, goal: "meditate", timeOfDay: "Late" },
-    library:   { temperature: 22, light: 460,  noise: 16, humidity: 42, goal: "study",    timeOfDay: "Midday" },
     coffee:    { temperature: 29, light: 540,  noise: 56, humidity: 48, goal: "study",    timeOfDay: "Midday" },
-    nightclub: { temperature: 31, light: 110,  noise: 88, humidity: 64, goal: "workout",  timeOfDay: "Late" },
   };
+
+  if (presetName === "randomize") {
+    const times = ["Early", "Midday", "Late"];
+    const goals = ["study", "relax", "workout", "meditate"];
+    const randomPreset = {
+      temperature: Math.floor(Math.random() * 51),
+      light: Math.floor(Math.random() * 1001),
+      noise: Math.floor(Math.random() * 101),
+      humidity: 10 + Math.floor(Math.random() * 81),
+      goal: goals[Math.floor(Math.random() * goals.length)],
+      timeOfDay: times[Math.floor(Math.random() * times.length)]
+    };
+
+    labTemp.value = String(randomPreset.temperature);
+    labLight.value = String(randomPreset.light);
+    labNoise.value = String(randomPreset.noise);
+    labHumidity.value = String(randomPreset.humidity);
+    setLabTimeOfDay(randomPreset.timeOfDay);
+    selectedGoal = randomPreset.goal;
+
+    goalButtons.forEach((b) => {
+      b.classList.toggle("active", b.dataset.goal === selectedGoal);
+    });
+
+    addEvent("Preset applied: randomize");
+    updateLabOutput();
+    return;
+  }
 
   const preset = presets[presetName];
   if (!preset) return;
