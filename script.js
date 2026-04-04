@@ -473,8 +473,8 @@ function updateLabOutput() {
   if (labEnergy)        labEnergy.textContent         = profile.energy;
   updateLabVisuals(temperature, light, noise);
 
-  if (isTestLabPage && playerTrack) playerTrack.textContent = trackLabel;
-  if (isTestLabPage) syncTestLabTrack(trackIdx, profile.style);
+  if ((isTestLabPage && playerTrack) || (isDashboardPage && playerTrack)) playerTrack.textContent = trackLabel;
+  if (isTestLab || isDashboardPage) syncTestLabTrack(trackIdx, profile.style);
 }
 
 function setLabTimeOfDay(timeOfDay) {
