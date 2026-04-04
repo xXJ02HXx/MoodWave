@@ -60,6 +60,12 @@ const isDashboardPage = Boolean(document.getElementById("dashboardClock"));
 const isLandingPage = Boolean(document.getElementById("heroSection")) && !isTestLabPage && !isDashboardPage;
 const landingPageAudio = isLandingPage ? new Audio("/Audio/Chill1.mp3") : null;
 
+// Expose dashboard state/hooks for teammate integration.
+window.sensorState = sensorState;
+window.latestSensorValues = latestSensorValues;
+window.ws = null;
+window._placeholderInterval = null;
+
 if (landingPageAudio) {
   landingPageAudio.loop = true;
   landingPageAudio.preload = "none";
@@ -125,6 +131,7 @@ function addEvent(message) {
   if (eventLog) eventLog.innerHTML = events.map((e) => `<li>${e}</li>`).join("");
   if (logCount) logCount.textContent = `${events.length} events`;
 }
+window.addEvent = addEvent;
 
 // ─────────────────────────────────────────────
 // CLOCK
@@ -174,6 +181,7 @@ function renderData(temperature, humidity, sound, brightness) {
 
   updatePlayerTrack(mood, condition);
 }
+window.renderData = renderData;
 
 // ─────────────────────────────────────────────
 // PLACEHOLDER DATA GENERATOR
@@ -185,6 +193,64 @@ function generatePlaceholderData() {
   const brightness  = sensorState.brightness  ? 100 + Math.random() * 760 : latestSensorValues.brightness;
   renderData(temperature, humidity, sound, brightness);
   if (eventTimer) eventTimer.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+}
+
+function extractSensorValue(payload, keys, fallback) {
+  for (const key of keys) {
+    if (payload[key] !== undefined && payload[key] !== null && !Number.isNaN(Number(payload[key]))) {
+      return Number(payload[key]);
+    }
+  }
+  return fallback;
+}
+
+function startDashboardStream() {
+  if (!isDashboardPage) return;
+
+  const wsUrl = "ws://localhost:8000/ws";
+  try {
+    const ws = new WebSocket(wsUrl);
+    window.ws = ws;
+
+    ws.addEventListener("open", () => {
+      if (statusText) statusText.textContent = "Live mode: Arduino stream connected.";
+      addEvent("Arduino stream connected");
+    });
+
+    ws.addEventListener("message", (event) => {
+      let data;
+      try {
+        data = JSON.parse(event.data);
+      } catch (_) {
+        return;
+      }
+
+      const temperature = extractSensorValue(data, ["temp_c", "temperature", "temp"], latestSensorValues.temperature);
+      const humidity = extractSensorValue(data, ["humidity_pct", "humidity", "rh"], latestSensorValues.humidity);
+      const sound = extractSensorValue(data, ["noise_p2p", "noise", "sound"], latestSensorValues.sound);
+      const brightness = extractSensorValue(data, ["light_raw", "brightness", "light"], latestSensorValues.brightness);
+
+      if (soundValue && sensorState.sound) {
+        soundValue.textContent = sound.toFixed(0);
+        const soundUnit = document.getElementById("soundUnit");
+        if (soundUnit) soundUnit.textContent = "dB";
+      }
+
+      renderData(temperature, humidity, sound, brightness);
+      if (eventTimer) eventTimer.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+    });
+
+    ws.addEventListener("close", () => {
+      if (statusText) statusText.textContent = "Live mode: Stream disconnected. Waiting to reconnect...";
+      addEvent("Arduino stream disconnected");
+    });
+
+    ws.addEventListener("error", () => {
+      if (statusText) statusText.textContent = "Live mode: Waiting for Arduino stream...";
+    });
+  } catch (_) {
+    if (statusText) statusText.textContent = "Live mode: Waiting for Arduino stream...";
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -258,40 +324,61 @@ function updateLabVisuals(temperature, light, noise) {
 
 function generateMusicProfile(temperature, light, noise, humidity, goal) {
   const roomType = inferRoomCondition(temperature, humidity, noise, light);
-  let title   = "Balanced Flow";
-  let summary = "MoodWave would blend measured rhythm, soft texture, and moderate energy.";
-  let style   = "Adaptive ambient pulse";
-  let energy  = "Medium";
+  // In Test Lab, use lighting to emulate time-of-day so presets can demonstrate all six genres.
+  const dayBand = light >= 700 ? "early" : light >= 300 ? "midday" : "late";
+  const tempBand = temperature <= 24 ? "cold" : "hot";
+  const key = `${dayBand}-${tempBand}`;
 
-  if (goal === "study" || goal === "focus") {
-    title   = noise > 60 ? "Shielded Focus" : "Focused Pulse";
-    summary = "Tight rhythmic layers and clear high-frequency control keep the room aimed at concentration.";
-    style   = "Calm electronic focus";
-    energy  = light > 600 ? "Medium-high" : "Medium";
-  } else if (goal === "relax" || goal === "meditate") {
-    title   = "Calm Drift";
-    summary = "Long pads, softer bass motion, and slow transitions reduce tension in the room.";
-    style   = "Warm ambient calm";
-    energy  = "Low";
-  } else if (goal === "workout") {
-    title   = "Drive Mode";
-    summary = "A stronger pulse and brighter musical accents push the room toward motion and energy.";
-    style   = "High-energy rhythm";
-    energy  = "High";
-  } else if (goal === "irritate") {
-    title   = "Chaotic Spike";
-    summary = "MoodWave deliberately produces unstable intensity, sharp shifts, and uncomfortable pressure.";
-    style   = "Harsh disruptive textures";
-    energy  = "Extreme";
-  }
+  const profiles = {
+    "early-cold": {
+      title: "Dawn Chill Pulse",
+      style: "Soft crystalline ambient",
+      summary: "Cool early air gets a gentle rhythmic bed with light texture to ease you into the day.",
+      energy: "Low"
+    },
+    "early-hot": {
+      title: "Sunrise Heat Lift",
+      style: "Warm rising synthwave",
+      summary: "Early warmth is balanced with airy highs and controlled rhythm so the room feels bright, not heavy.",
+      energy: "Medium"
+    },
+    "midday-cold": {
+      title: "Noon Ice Focus",
+      style: "Clean focus electronica",
+      summary: "Midday coolness gets crisp percussion and stable patterns to keep productivity locked in.",
+      energy: "Medium"
+    },
+    "midday-hot": {
+      title: "Solar Drive",
+      style: "High-motion rhythmic pulse",
+      summary: "Hot midday conditions push a stronger groove with brighter accents to channel the room's intensity.",
+      energy: "High"
+    },
+    "late-cold": {
+      title: "Twilight Frost Calm",
+      style: "Deep evening ambient",
+      summary: "Late cool rooms get wider pads and slower movement for a calm, grounded night feel.",
+      energy: "Low"
+    },
+    "late-hot": {
+      title: "Night Ember Flow",
+      style: "Dark warm downtempo",
+      summary: "Late warmth is softened with darker low-end waves and smoother transitions for sustained comfort.",
+      energy: "Medium"
+    }
+  };
+
+  const selected = profiles[key] || profiles["midday-cold"];
+  let title = selected.title;
+  let style = selected.style;
+  let summary = selected.summary;
+  let energy = selected.energy;
 
   if (roomType === "Hot and stuffy") {
     summary = "The room feels hot and heavy. MoodWave offsets that with lighter textures and more air in the mix.";
   }
-  if (roomType === "Overstimulated" && goal !== "workout") {
-    title  = "Noise Recovery";
-    style  = "Low-clutter ambient control";
-    energy = "Low";
+  if (roomType === "Overstimulated") {
+    summary = "The room is overstimulated, so MoodWave thins the mix and tightens rhythm to reduce sensory pressure.";
   }
 
   return { roomType, title, summary, style, energy };
@@ -327,12 +414,12 @@ function applyPreset(presetName) {
   if (!labTemp || !labLight || !labNoise || !labHumidity) return;
 
   const presets = {
-    sauna:     { temperature: 42, light: 380,  noise: 24, humidity: 82, goal: "relax"    },
-    igloo:     { temperature: 2,  light: 700,  noise: 12, humidity: 30, goal: "focus"    },
-    massage:   { temperature: 27, light: 170,  noise: 18, humidity: 55, goal: "meditate" },
-    library:   { temperature: 22, light: 450,  noise: 16, humidity: 42, goal: "study"    },
-    coffee:    { temperature: 24, light: 520,  noise: 56, humidity: 48, goal: "focus"    },
-    nightclub: { temperature: 31, light: 120,  noise: 88, humidity: 64, goal: "workout"  },
+    sauna:     { temperature: 42, light: 860,  noise: 24, humidity: 82, goal: "relax"    }, // early-hot
+    igloo:     { temperature: 2,  light: 820,  noise: 12, humidity: 30, goal: "study"    }, // early-cold
+    massage:   { temperature: 21, light: 180,  noise: 18, humidity: 55, goal: "meditate" }, // late-cold
+    library:   { temperature: 22, light: 460,  noise: 16, humidity: 42, goal: "study"    }, // midday-cold
+    coffee:    { temperature: 29, light: 540,  noise: 56, humidity: 48, goal: "study"    }, // midday-hot
+    nightclub: { temperature: 31, light: 110,  noise: 88, humidity: 64, goal: "workout"  }, // late-hot
   };
 
   const preset = presets[presetName];
@@ -342,7 +429,7 @@ function applyPreset(presetName) {
   labLight.value   = String(preset.light);
   labNoise.value   = String(preset.noise);
   labHumidity.value = String(preset.humidity);
-  selectedGoal     = preset.goal;
+  selectedGoal     = preset.goal === "focus" ? "study" : preset.goal;
 
   goalButtons.forEach((b) => {
     b.classList.toggle("active", b.dataset.goal === selectedGoal);
@@ -358,26 +445,24 @@ function applyPreset(presetName) {
 
 const TRACKS = 
 [
-  { label: "Focused Pulse — Calm electronic focus",  src: "/audio/Chill1.mp3" },
-  { label: "Calm Drift — Warm ambient calm",         src: "/audio/Chill1.mp3"    },
-  { label: "Drive Mode — High-energy rhythm",        src: "/audio/Chill1.mp3"    },
-  { label: "Blue Hour — Deep ambient textures",      src: "/audio/Chill1.mp3"     },
-  { label: "Rain Logic — Lo-fi focus blend",         src: "/audio/Chill1.mp3"    },
-  { label: "Clear Signal — Minimal work state",      src: "/audio/Chill1.mp3"  },
-  { label: "Late Current — Evening wind-down",       src: "/audio/Chill1.mp3"  },
-  { label: "Noon Charge — Bright mid-energy pop",    src: "/audio/Chill1.mp3"   },
+  { label: "Dawn Chill Pulse — Soft crystalline ambient", src: "/Audio/Chill1.mp3" },
+  { label: "Sunrise Heat Lift — Warm rising synthwave", src: "/Audio/Chill1.mp3" },
+  { label: "Noon Ice Focus — Clean focus electronica", src: "/Audio/Chill1.mp3" },
+  { label: "Solar Drive — High-motion rhythmic pulse", src: "/Audio/Chill1.mp3" },
+  { label: "Twilight Frost Calm — Deep evening ambient", src: "/Audio/Chill1.mp3" },
+  { label: "Night Ember Flow — Dark warm downtempo", src: "/Audio/Chill1.mp3" },
 ];
 
 // Mood → track index map (matches TRACKS array above)
 const MOOD_TRACK_MAP = 
 {
-  "Focused":        5, // Clear Signal
-  "High Energy":    2, // Drive Mode
-  "Calm / Relaxed": 1, // Calm Drift
-  "Balanced Flow":  7, // Noon Charge
+  "Focused":        2, // Noon Ice Focus
+  "High Energy":    3, // Solar Drive
+  "Calm / Relaxed": 4, // Twilight Frost Calm
+  "Balanced Flow":  0, // Dawn Chill Pulse
 };
 const CONDITION_TRACK_OVERRIDES = {
-  "Hot and stuffy": 3, // Blue Hour
+  "Hot and stuffy": 5, // Night Ember Flow
 };
 
 const FADE_DURATION = 2.5; // seconds
@@ -623,7 +708,23 @@ toggleButtons.forEach((button) => {
     sensorState[sensor] = !sensorState[sensor];
     updateSensorCardState();
     addEvent(`${sensor.charAt(0).toUpperCase() + sensor.slice(1)} sensor turned ${sensorState[sensor] ? "on" : "off"}`);
-    generatePlaceholderData();
+
+    if (isDashboardPage && window.ws && window.ws.readyState === WebSocket.OPEN) {
+      renderData(
+        latestSensorValues.temperature,
+        latestSensorValues.humidity,
+        latestSensorValues.sound,
+        latestSensorValues.brightness
+      );
+    } else {
+      renderData(
+        latestSensorValues.temperature,
+        latestSensorValues.humidity,
+        latestSensorValues.sound,
+        latestSensorValues.brightness
+      );
+      if (statusText) statusText.textContent = "Live mode: Waiting for Arduino stream...";
+    }
   });
 });
 
@@ -639,7 +740,7 @@ toggleButtons.forEach((button) => {
 // ─────────────────────────────────────────────
 goalButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
-    selectedGoal = btn.dataset.goal;
+    selectedGoal = btn.dataset.goal === "focus" ? "study" : btn.dataset.goal;
     goalButtons.forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     updateLabOutput();
@@ -730,8 +831,13 @@ document.addEventListener("DOMContentLoaded", () => {
 // INIT
 // ─────────────────────────────────────────────
 loadSession();
-updateLabOutput();
-generatePlaceholderData();
-renderClock();
-setInterval(renderClock, 1000);
-setInterval(generatePlaceholderData, 4000);
+
+if (isTestLabPage) {
+  updateLabOutput();
+}
+
+if (isDashboardPage) {
+  renderClock();
+  setInterval(renderClock, 1000);
+  if (statusText) statusText.textContent = "Live mode: Connecting to Arduino stream...";
+}

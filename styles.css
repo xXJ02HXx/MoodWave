@@ -135,11 +135,30 @@ body {
    HERO
    ───────────────────────────────────────────── */
 .hero {
+  position: relative;
+  overflow: hidden;
   text-align: center;
   padding: 50px 24px 45px;
   background:
     radial-gradient(ellipse at 50% 0%, rgba(45, 194, 255, 0.18) 0%, transparent 55%),
     linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -270px;
+  height: clamp(320px, 48vw, 620px);
+  background: url("images/musicWave.png") center top / 100% 135% no-repeat;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
 }
 
 .hero-eyebrow {
@@ -155,11 +174,18 @@ body {
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1;
+  display: inline-block;
+  position: relative;
+  padding: 0 20px;
   background: linear-gradient(135deg, #ffffff 30%, var(--accent-soft) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 12px;
+}
+
+.hero-title::before {
+  content: none;
 }
 
 .hero-slogan {
@@ -698,8 +724,8 @@ body {
 .goal-panel p { color: var(--muted); font-size: 0.87rem; margin-bottom: 10px; }
 
 .goal-buttons {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -708,7 +734,7 @@ body {
   background: rgba(12, 33, 55, 0.85);
   color: #d7ecff;
   border-radius: 999px;
-  padding: 8px 16px;
+  padding: 8px 10px;
   cursor: pointer;
   font-size: 0.9rem;
   transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
@@ -1166,6 +1192,9 @@ body {
    RESPONSIVE
    ───────────────────────────────────────────── */
 @media (max-width: 960px) {
+  .goal-buttons {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
   .login-shell {
     grid-template-columns: 1fr;
   }
@@ -1190,6 +1219,9 @@ body {
 }
 
 @media (max-width: 640px) {
+  .goal-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .login-page {
     padding: 18px 12px;
   }
