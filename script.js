@@ -5,6 +5,7 @@
 // ── DOM ──
 const statusText      = document.getElementById("statusText");
 const loginBtn        = document.getElementById("loginBtn");
+const signUpBtn       = document.querySelector('.nav-right a.btn-filled[href="/login"]');
 const sessionUser     = document.getElementById("sessionUser");
 const logoutBtn       = document.getElementById("logoutBtn");
 const tempValueEl     = document.getElementById("tempValue");
@@ -29,10 +30,12 @@ const labTemp          = document.getElementById("labTemp");
 const labLight         = document.getElementById("labLight");
 const labNoise         = document.getElementById("labNoise");
 const labHumidity      = document.getElementById("labHumidity");
+const labTimeButtons   = document.querySelectorAll(".time-btn");
 const labTempDisplay   = document.getElementById("labTempDisplay");
 const labLightValue    = document.getElementById("labLightValue");
 const labNoiseValue    = document.getElementById("labNoiseValue");
 const labHumidityValue = document.getElementById("labHumidityValue");
+const labTimeOfDayValue = document.getElementById("labTimeOfDayValue");
 const labMusicTitle    = document.getElementById("labMusicTitle");
 const labMusicSummary  = document.getElementById("labMusicSummary");
 const labRoomType      = document.getElementById("labRoomType");
@@ -44,6 +47,7 @@ const presetButtons    = document.querySelectorAll(".preset-card, .preset-btn");
 
 // Music player
 const playerTrack  = document.getElementById("playerTrack");
+const playerMuteBtn = document.getElementById("playerMuteBtn");
 const playerPlayBtn = document.getElementById("playerPlayBtn");
 const playerSkipBtn = document.getElementById("playerSkipBtn");
 const musicPlayer  = document.getElementById("musicPlayer");
@@ -55,6 +59,9 @@ const latestSensorValues = { temperature: 23, humidity: 48, sound: 40, brightnes
 const events = [];
 let selectedGoal   = "study";
 let showFahrenheit = false;
+let selectedLabTimeOfDay = "Midday";
+let isMuted = true;
+let landingTrackIndex = 0;
 const isTestLabPage = Boolean(document.getElementById("test-lab"));
 const isDashboardPage = Boolean(document.getElementById("dashboardClock"));
 const isLandingPage = Boolean(document.getElementById("heroSection")) && !isTestLabPage && !isDashboardPage;
@@ -69,6 +76,7 @@ window._placeholderInterval = null;
 if (landingPageAudio) {
   landingPageAudio.loop = true;
   landingPageAudio.preload = "none";
+  landingPageAudio.muted = true;
 }
 
 // ─────────────────────────────────────────────
@@ -140,9 +148,38 @@ function renderClock() {
   const now = new Date();
   if (dashboardClock) dashboardClock.textContent = now.toLocaleTimeString();
   if (dayPhase) {
-    const h = now.getHours();
-    dayPhase.textContent = h < 6 ? "Late Night" : h < 12 ? "Morning" : h < 18 ? "Afternoon" : "Evening";
+    dayPhase.textContent = getDayPhaseLabel(now.getHours());
   }
+}
+
+function getDayPhaseLabel(hour) {
+  if (hour < 6) return "Late Night";
+  if (hour < 12) return "Morning";
+  if (hour < 18) return "Afternoon";
+  return "Evening";
+}
+
+function getTrackTimeIndex(dayPhaseLabel) {
+  if (dayPhaseLabel === "Morning" || dayPhaseLabel === "Early") return 1;
+  if (dayPhaseLabel === "Afternoon" || dayPhaseLabel === "Midday") return 2;
+  return 3;
+}
+
+function getProfileDayBand(dayPhaseLabel) {
+  if (dayPhaseLabel === "Morning" || dayPhaseLabel === "Early") return "early";
+  if (dayPhaseLabel === "Afternoon" || dayPhaseLabel === "Midday") return "midday";
+  return "late";
+}
+
+function getTempTrackBand(temperature) {
+  if (temperature < 17) return 1;
+  if (temperature < 22) return 2;
+  if (temperature < 25.5) return 3;
+  return 4;
+}
+
+function getTrackIndex(time, temp) {
+  return 4 * (time - 1) + (temp - 1);
 }
 
 // ─────────────────────────────────────────────
@@ -155,11 +192,7 @@ function renderData(temperature, humidity, sound, brightness)
   latestSensorValues.sound       = sound;
   latestSensorValues.brightness  = brightness;
 
-  temp = 0;
-  if(temperature < 17) temp = 1;
-  else if(temperature < 22) temp = 2;
-  else if(temperature < 25.5) temp = 3;
-  else temp = 4;
+  const temp = getTempTrackBand(temperature);
 
 
   if (tempValueEl) {
@@ -187,13 +220,7 @@ function renderData(temperature, humidity, sound, brightness)
   if (roomCondition) roomCondition.textContent = condition;
   if (spaceAdvice)   spaceAdvice.textContent   = inferAdvice(condition, mood);
 
-  // determine time of day 
-  h = now.getHours();
-  time = 0;
-  if(h < 6) time = 3;
-  else if(h < 12) time = 1;
-  else if(h < 20) time = 2;
-  else time = 3;
+  const time = getTrackTimeIndex(getDayPhaseLabel(new Date().getHours()));
 
   
 
@@ -340,10 +367,9 @@ function updateLabVisuals(temperature, light, noise) {
   }
 }
 
-function generateMusicProfile(temperature, light, noise, humidity, goal) {
+function generateMusicProfile(temperature, light, noise, humidity, goal, timeOfDay) {
   const roomType = inferRoomCondition(temperature, humidity, noise, light);
-  // In Test Lab, use lighting to emulate time-of-day so presets can demonstrate all six genres.
-  const dayBand = light >= 700 ? "early" : light >= 300 ? "midday" : "late";
+  const dayBand = getProfileDayBand(timeOfDay);
   const tempBand = temperature <= 24 ? "cold" : "hot";
   const key = `${dayBand}-${tempBand}`;
 
@@ -409,29 +435,20 @@ function updateLabOutput() {
   const light       = Number(labLight.value);
   const noise       = Number(labNoise.value);
   const humidity    = Number(labHumidity.value);
+  const timeOfDay   = selectedLabTimeOfDay;
   const fahr        = cToF(temperature).toFixed(0);
-  const profile     = generateMusicProfile(temperature, light, noise, humidity, selectedGoal);
+  const profile     = generateMusicProfile(temperature, light, noise, humidity, selectedGoal, timeOfDay);
 
-  // Same temp bands as renderData()
-  let temp = 0;
-  if      (temperature < 17)   temp = 1;
-  else if (temperature < 22)   temp = 2;
-  else if (temperature < 25.5) temp = 3;
-  else                          temp = 4;
-
-  // Same time bands as renderData(), but driven by light since lab has no clock
-  let time = 0;
-  if      (light >= 700) time = 1; // bright = morning
-  else if (light >= 200) time = 2; // mid = noon
-  else                   time = 3; // dim = night
-
-  const trackIdx   = 4 * (time - 1) + (temp - 1); // -1 because temp is 1-based, array is 0-based
+  const temp = getTempTrackBand(temperature);
+  const time = getTrackTimeIndex(timeOfDay);
+  const trackIdx = getTrackIndex(time, temp);
   const trackLabel = TRACKS[trackIdx]?.label ?? profile.title;
 
   if (labTempDisplay)   labTempDisplay.textContent   = `${temperature}°C / ${fahr}°F`;
   if (labLightValue)    labLightValue.textContent     = `${light} lux`;
   if (labNoiseValue)    labNoiseValue.textContent     = noiseLabel(noise);
   if (labHumidityValue) labHumidityValue.textContent  = `${humidity}%`;
+  if (labTimeOfDayValue) labTimeOfDayValue.textContent = timeOfDay;
   if (labMusicTitle)    labMusicTitle.textContent     = trackLabel;
   if (labMusicSummary)  labMusicSummary.textContent   = profile.summary;
   if (labRoomType)      labRoomType.textContent       = profile.roomType;
@@ -440,19 +457,28 @@ function updateLabOutput() {
   if (labEnergy)        labEnergy.textContent         = profile.energy;
   updateLabVisuals(temperature, light, noise);
 
-  if (isTestLabPage && playerTrack) playerTrack.textContent = `${trackLabel} — ${profile.style}`;
+  if (isTestLabPage && playerTrack) playerTrack.textContent = trackLabel;
+  if (isTestLabPage) syncTestLabTrack(trackIdx, profile.style);
+}
+
+function setLabTimeOfDay(timeOfDay) {
+  selectedLabTimeOfDay = timeOfDay;
+  if (labTimeOfDayValue) labTimeOfDayValue.textContent = timeOfDay;
+  labTimeButtons.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.time === timeOfDay);
+  });
 }
 
 function applyPreset(presetName) {
   if (!labTemp || !labLight || !labNoise || !labHumidity) return;
 
   const presets = {
-    sauna:     { temperature: 42, light: 860,  noise: 24, humidity: 82, goal: "relax"    }, // early-hot
-    igloo:     { temperature: 2,  light: 820,  noise: 12, humidity: 30, goal: "study"    }, // early-cold
-    massage:   { temperature: 21, light: 180,  noise: 18, humidity: 55, goal: "meditate" }, // late-cold
-    library:   { temperature: 22, light: 460,  noise: 16, humidity: 42, goal: "study"    }, // midday-cold
-    coffee:    { temperature: 29, light: 540,  noise: 56, humidity: 48, goal: "study"    }, // midday-hot
-    nightclub: { temperature: 31, light: 110,  noise: 88, humidity: 64, goal: "workout"  }, // late-hot
+    sauna:     { temperature: 42, light: 860,  noise: 24, humidity: 82, goal: "relax",    timeOfDay: "Early" },
+    igloo:     { temperature: 2,  light: 820,  noise: 12, humidity: 30, goal: "study",    timeOfDay: "Early" },
+    massage:   { temperature: 21, light: 180,  noise: 18, humidity: 55, goal: "meditate", timeOfDay: "Late" },
+    library:   { temperature: 22, light: 460,  noise: 16, humidity: 42, goal: "study",    timeOfDay: "Midday" },
+    coffee:    { temperature: 29, light: 540,  noise: 56, humidity: 48, goal: "study",    timeOfDay: "Midday" },
+    nightclub: { temperature: 31, light: 110,  noise: 88, humidity: 64, goal: "workout",  timeOfDay: "Late" },
   };
 
   const preset = presets[presetName];
@@ -462,6 +488,7 @@ function applyPreset(presetName) {
   labLight.value   = String(preset.light);
   labNoise.value   = String(preset.noise);
   labHumidity.value = String(preset.humidity);
+  setLabTimeOfDay(preset.timeOfDay);
   selectedGoal     = preset.goal === "focus" ? "study" : preset.goal;
 
   goalButtons.forEach((b) => {
@@ -477,19 +504,34 @@ function applyPreset(presetName) {
 
 const TRACKS = 
 [
-  { label: "Snowed in",  src: "/audio/1_Snowed_In.mp3" },           // COLD, MORNING
-  { label: "Cool Dawn",         src: "/audio/2_Cool_Dawn.mp3"    }, // chilly Morning
-  { label: "Warm Morn",        src: "/audio/3_Warm_Morn.mp3"    },      // warm Morning
-  { label: "Rise and Grind",      src: "/audio/4_Rise_and_Grind.mp3"     },       // Hot Morning
-  { label: "Freezer Meals",         src: "/audio/5_Freezer_Meals.mp3"    },     // Cold Noon
-  { label: "Sweater Weather",      src: "/audio/6_Sweater_Weather.mp3"  },          // chilly Noon
-  { label: "Spacing Off",       src: "/audio/7_Spacing_Off.mp3"  },         // warm Noon
-  { label: "Microwave Madness",    src: "/audio/8_Microwave_Madness.mp3"   },           // Hot Noon
-  { label: "Title - CL",         src: "/audio/Chill1.mp3"    },     // Cold Night
-  { label: "Title - cL",      src: "/audio/Chill1.mp3"  },          // chilly Night
-  { label: "Title - hL",       src: "/audio/Chill1.mp3"  },         // warm Night
-  { label: "Title - HL",    src: "/audio/Chill1.mp3"   },           // Hot Night
+  { label: "Snowed in",  src: "/Audio/1_Snowed_In.mp3" },           // COLD, MORNING
+  { label: "Cool Dawn",         src: "/Audio/2_Cool_Dawn.mp3"    }, // chilly Morning
+  { label: "Warm Morn",        src: "/Audio/3_Warm_Morn.mp3"    },      // warm Morning
+  { label: "Rise and Grind",      src: "/Audio/4_Rise_and_Grind.mp3"     },       // Hot Morning
+  { label: "Freezer Meals",         src: "/Audio/5_Freezer_Meals.mp3"    },     // Cold Noon
+  { label: "Sweater Weather",      src: "/Audio/6_Sweater_Weather.mp3"  },          // chilly Noon
+  { label: "Spacing Off",       src: "/Audio/7_Spacing_Off.mp3"  },         // warm Noon
+  { label: "Microwave Madness",    src: "/Audio/8_Microwave_Madness.mp3"   },           // Hot Noon
+  { label: "Title - CL",         src: "/Audio/Chill1.mp3"    },     // Cold Night
+  { label: "Title - cL",      src: "/Audio/Chill1.mp3"  },          // chilly Night
+  { label: "Title - hL",       src: "/Audio/Chill1.mp3"  },         // warm Night
+  { label: "Title - HL",    src: "/Audio/Chill1.mp3"   },           // Hot Night
 ];
+
+function fileNameFromSrc(src) {
+  const parts = String(src || "").split("/");
+  return parts[parts.length - 1] || src;
+}
+
+const LANDING_PLAYLIST = Array.from(
+  new Map(TRACKS.map((track) => [track.src, track])).values()
+).map((track) => ({ src: track.src, label: fileNameFromSrc(track.src) }));
+
+if (isLandingPage && landingPageAudio) {
+  const chillIndex = LANDING_PLAYLIST.findIndex((t) => t.src === "/Audio/Chill1.mp3");
+  landingTrackIndex = chillIndex >= 0 ? chillIndex : 0;
+  landingPageAudio.src = LANDING_PLAYLIST[landingTrackIndex]?.src || "/Audio/Chill1.mp3";
+}
 
 // Mood → track index map (matches TRACKS array above)
 const MOOD_TRACK_MAP = 
@@ -507,15 +549,18 @@ const FADE_DURATION = 8; // seconds
 
 // Two slots — we alternate between them for crossfading
 const slot = [
-  { gain: null, source: null },
-  { gain: null, source: null },
+  { gain: null, source: null, stopTimer: null },
+  { gain: null, source: null, stopTimer: null },
 ];
 let activeSlot      = 0;
 let audioCtx        = null;
+let masterGain      = null;
 let currentTrackIndex = 0;
 let playerPlaying   = false;
 let lastMoodIndex   = -1;      // debounce: track last mood-driven index
 let moodIndexCount  = 0;       // debounce: consecutive matching readings
+let transitionInProgress = false;
+let pendingTrackIndex = null;
 
 const bufferCache = new Map();
 
@@ -524,10 +569,13 @@ const bufferCache = new Map();
 function getAudioCtx() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = isMuted ? 0 : 1;
+    masterGain.connect(audioCtx.destination);
     slot.forEach((s) => {
       s.gain = audioCtx.createGain();
       s.gain.gain.value = 0;
-      s.gain.connect(audioCtx.destination);
+      s.gain.connect(masterGain);
     });
   }
   return audioCtx;
@@ -546,6 +594,10 @@ async function loadBuffer(src) {
 function stopSlot(idx) 
 {
   const s = slot[idx];
+  if (s.stopTimer) {
+    clearTimeout(s.stopTimer);
+    s.stopTimer = null;
+  }
   if (s.source) {
     try { s.source.stop(); } catch (_) { /* already stopped */ }
     s.source.disconnect();
@@ -556,6 +608,10 @@ function stopSlot(idx)
 function startSlot(idx, buffer) 
 {
   const ctx = getAudioCtx();
+  if (slot[idx].stopTimer) {
+    clearTimeout(slot[idx].stopTimer);
+    slot[idx].stopTimer = null;
+  }
   stopSlot(idx);
   const src  = ctx.createBufferSource();
   src.buffer = buffer;
@@ -585,9 +641,16 @@ function crossfade(fromIdx, toIdx) {
   to.exponentialRampToValueAtTime(1.0, now + FADE_DURATION);
 
   // Once the fade is complete, stop the old slot to free resources
-  setTimeout(() => {
+  if (slot[fromIdx].stopTimer) clearTimeout(slot[fromIdx].stopTimer);
+  slot[fromIdx].stopTimer = setTimeout(() => {
     stopSlot(fromIdx);
     slot[fromIdx].gain.gain.value = 0;
+    transitionInProgress = false;
+    if (pendingTrackIndex !== null && pendingTrackIndex !== currentTrackIndex) {
+      const next = pendingTrackIndex;
+      pendingTrackIndex = null;
+      playTrack(next, true);
+    }
   }, (FADE_DURATION + 0.15) * 1000);
 }
 
@@ -595,6 +658,11 @@ function crossfade(fromIdx, toIdx) {
 // crossfadeIn = true  → smooth crossfade from whatever is currently playing
 // crossfadeIn = false → hard start (first play, or after a pause)
 async function playTrack(index, crossfadeIn = true) {
+  if (transitionInProgress && crossfadeIn) {
+    pendingTrackIndex = index;
+    return;
+  }
+
   const ctx   = getAudioCtx();
   await ctx.resume();
 
@@ -611,6 +679,7 @@ async function playTrack(index, crossfadeIn = true) {
     startSlot(nextSlot, buffer);
 
     if (crossfadeIn && slot[activeSlot].source) {
+      transitionInProgress = true;
       crossfade(activeSlot, nextSlot);
     } else {
       // First play: fade in from silence
@@ -674,13 +743,30 @@ async function resumePlayer() {
   if (musicPlayer)   musicPlayer.classList.remove("paused");
 }
 
+function applyMuteState() {
+  if (landingPageAudio) {
+    landingPageAudio.muted = isMuted;
+  }
+  if (audioCtx && masterGain) {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    masterGain.gain.cancelScheduledValues(now);
+    masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+    masterGain.gain.linearRampToValueAtTime(isMuted ? 0 : 1, now + 0.15);
+  }
+  if (playerMuteBtn) {
+    playerMuteBtn.textContent = isMuted ? "🔇" : "🔊";
+    playerMuteBtn.classList.toggle("active", !isMuted);
+  }
+}
+
 // Called by renderData() every time sensor values update.
 // Uses a 2-reading debounce so a single noisy spike doesn't
 // cause an unwanted crossfade.
 function updatePlayerTrack(time, temp) 
 {
   if (isTestLabPage || isLandingPage) return;
-  const idx = 4*(time-1) + temp;
+  const idx = getTrackIndex(time, temp);
 
   // Always update the label when not actively playing
   if (!playerPlaying) {
@@ -697,8 +783,22 @@ function updatePlayerTrack(time, temp)
     moodIndexCount = 1;
   }
 
-  if (idx !== currentTrackIndex) 
-  {
+  if (idx !== currentTrackIndex && moodIndexCount >= 2) {
+    moodIndexCount = 0;
+    playTrack(idx, true);
+  }
+}
+
+function syncTestLabTrack(idx, styleLabel) {
+  if (idx < 0 || idx >= TRACKS.length) return;
+
+  if (!playerPlaying) {
+    currentTrackIndex = idx;
+    if (playerTrack) playerTrack.textContent = TRACKS[idx].label;
+    return;
+  }
+
+  if (idx !== currentTrackIndex) {
     playTrack(idx, true);
   }
 }
@@ -737,6 +837,59 @@ if (playerPlayBtn) {
   });
 }
 
+if (playerMuteBtn) {
+  playerMuteBtn.addEventListener("click", async () => {
+    isMuted = !isMuted;
+    applyMuteState();
+
+    if (!isMuted && !playerPlaying) {
+      if (isLandingPage && landingPageAudio) {
+        try {
+          await landingPageAudio.play();
+          playerPlaying = true;
+          if (playerPlayBtn) playerPlayBtn.textContent = "⏸";
+          if (musicPlayer) musicPlayer.classList.remove("paused");
+        } catch (_) {
+          // Browser still blocked playback.
+        }
+        return;
+      }
+
+      try {
+        if (!audioCtx || !slot[activeSlot].source) {
+          await playTrack(currentTrackIndex, false);
+        } else {
+          await resumePlayer();
+        }
+      } catch (_) {
+        // Playback can still be blocked until another gesture.
+      }
+    }
+  });
+}
+
+if (playerSkipBtn && isLandingPage && landingPageAudio) {
+  playerSkipBtn.addEventListener("click", async () => {
+    landingTrackIndex = (landingTrackIndex + 1) % LANDING_PLAYLIST.length;
+    const nextTrack = LANDING_PLAYLIST[landingTrackIndex];
+    if (!nextTrack) return;
+
+    landingPageAudio.src = nextTrack.src;
+    if (playerTrack) playerTrack.textContent = nextTrack.label;
+
+    try {
+      await landingPageAudio.play();
+      playerPlaying = true;
+      if (playerPlayBtn) playerPlayBtn.textContent = "⏸";
+      if (musicPlayer) musicPlayer.classList.remove("paused");
+      applyMuteState();
+    } catch (_) {
+      playerPlaying = false;
+      if (playerPlayBtn) playerPlayBtn.textContent = "▶";
+      if (musicPlayer) musicPlayer.classList.add("paused");
+    }
+  });
+}
 
 // ─────────────────────────────────────────────
 // TEMPERATURE UNIT TOGGLE
@@ -791,6 +944,13 @@ toggleButtons.forEach((button) => {
   if (el) el.addEventListener("input", updateLabOutput);
 });
 
+labTimeButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    setLabTimeOfDay(btn.dataset.time || "Midday");
+    updateLabOutput();
+  });
+});
+
 // ─────────────────────────────────────────────
 // GOAL BUTTONS
 // ─────────────────────────────────────────────
@@ -823,6 +983,7 @@ async function loadSession() {
       sessionUser.style.display = "inline-block";
       logoutBtn.style.display   = "inline-block";
       loginBtn.style.display    = "none";
+      if (signUpBtn) signUpBtn.style.display = "none";
       if (statusText) statusText.textContent = `Logged in as ${data.user.username}. Goals and room profiles saved to your account.`;
       return;
     }
@@ -832,6 +993,7 @@ async function loadSession() {
   sessionUser.style.display = "none";
   logoutBtn.style.display   = "none";
   loginBtn.style.display    = "inline-block";
+  if (signUpBtn) signUpBtn.style.display = "inline-block";
 }
 
 if (logoutBtn) {
@@ -840,6 +1002,7 @@ if (logoutBtn) {
     sessionUser.style.display = "none";
     logoutBtn.style.display   = "none";
     if (loginBtn)    loginBtn.style.display    = "inline-block";
+    if (signUpBtn)   signUpBtn.style.display   = "inline-block";
     if (statusText)  statusText.textContent    = "Logged out. Create an account to save goals and future room profiles.";
   });
 }
@@ -874,13 +1037,56 @@ document.querySelectorAll("[data-panel]").forEach((btn) => {
 
 document.addEventListener("DOMContentLoaded", () => {
   switchPanel("what");
+  applyMuteState();
 
   if (isLandingPage) {
-    if (playerTrack) playerTrack.textContent = "Chill1.mp3 — Main page audio test";
-    if (playerPlayBtn) playerPlayBtn.textContent = "▶";
-    if (playerSkipBtn) playerSkipBtn.style.display = "none";
-    if (musicPlayer) musicPlayer.classList.add("paused");
+    if (playerTrack) {
+      playerTrack.textContent = LANDING_PLAYLIST[landingTrackIndex]?.label || "Chill1.mp3";
+    }
+    if (playerPlayBtn) playerPlayBtn.textContent = "⏸";
+    if (musicPlayer) musicPlayer.classList.remove("paused");
+    if (landingPageAudio) {
+      landingPageAudio.play()
+        .then(() => {
+          playerPlaying = true;
+        })
+        .catch(() => {
+          playerPlaying = false;
+          if (playerPlayBtn) playerPlayBtn.textContent = "▶";
+          if (musicPlayer) musicPlayer.classList.add("paused");
+        });
+    }
+    return;
   }
+
+  playTrack(currentTrackIndex, false)
+    .then(() => {
+      playerPlaying = true;
+    })
+    .catch(() => {
+      playerPlaying = false;
+      if (playerPlayBtn) playerPlayBtn.textContent = "▶";
+      if (musicPlayer) musicPlayer.classList.add("paused");
+
+      const unlockAndStart = async () => {
+        document.removeEventListener("click", unlockAndStart);
+        document.removeEventListener("keydown", unlockAndStart);
+        document.removeEventListener("touchstart", unlockAndStart);
+        try {
+          await playTrack(currentTrackIndex, false);
+          playerPlaying = true;
+          if (playerPlayBtn) playerPlayBtn.textContent = "⏸";
+          if (musicPlayer) musicPlayer.classList.remove("paused");
+          applyMuteState();
+        } catch (_) {
+          // still blocked
+        }
+      };
+
+      document.addEventListener("click", unlockAndStart);
+      document.addEventListener("keydown", unlockAndStart);
+      document.addEventListener("touchstart", unlockAndStart);
+    });
 });
 
 // ─────────────────────────────────────────────
@@ -889,6 +1095,7 @@ document.addEventListener("DOMContentLoaded", () => {
 loadSession();
 
 if (isTestLabPage) {
+  setLabTimeOfDay(selectedLabTimeOfDay);
   updateLabOutput();
 }
 

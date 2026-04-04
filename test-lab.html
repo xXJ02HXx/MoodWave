@@ -110,6 +110,18 @@
               <input id="labHumidity" type="range" min="10" max="90" value="48" />
               <div class="slider-extremes"><span>Bone dry</span><span>Tropical swamp</span></div>
             </label>
+
+            <div class="select-row">
+              <div class="slider-label-row">
+                <span>Time of Day</span>
+                <strong id="labTimeOfDayValue">Afternoon</strong>
+              </div>
+              <div class="time-buttons" id="labTimeButtons">
+                <button class="time-btn" data-time="Early" type="button">Early</button>
+                <button class="time-btn active" data-time="Midday" type="button">Midday</button>
+                <button class="time-btn" data-time="Late" type="button">Late</button>
+              </div>
+            </div>
           </div>
 
           <div class="lab-output" id="labOutputBox">
@@ -147,8 +159,8 @@
           <span class="player-track" id="playerTrack">Focused Pulse — Calm electronic focus</span>
         </div>
         <div class="player-btns">
+          <button class="player-btn" id="playerMuteBtn" type="button" title="Mute / Unmute">🔇</button>
           <button class="player-btn" id="playerPlayBtn" type="button" title="Play / Pause">⏸</button>
-          <button class="player-btn" id="playerSkipBtn" type="button" title="Next">⏭</button>
         </div>
       </div>
     </div>

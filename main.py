@@ -8,6 +8,7 @@ from collections import deque
 from datetime import datetime
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
 # ─────────────────────────────────────────────
 # CONFIG — change these to match your Arduino
@@ -369,3 +370,32 @@ async def websocket_endpoint(websocket: WebSocket):
         finally:
             if 'ser' in locals() and ser.is_open:
                 ser.close()
+
+
+def build_arg_parser():
+    parser = argparse.ArgumentParser(description="MoodWave Arduino websocket bridge")
+    parser.add_argument("--simulate", action="store_true", help="Use simulated sensor data instead of serial input")
+    parser.add_argument("--port", type=int, default=8000, help="WebSocket server port")
+    parser.add_argument("--host", default="0.0.0.0", help="WebSocket server host")
+    parser.add_argument("--serial-port", dest="serial_port", default=SERIAL_PORT, help="Arduino serial port (e.g. COM3)")
+    parser.add_argument("--baud-rate", dest="baud_rate", type=int, default=BAUD_RATE, help="Arduino baud rate")
+    return parser
+
+
+def main():
+    global SIMULATE, SERIAL_PORT, BAUD_RATE
+
+    args = build_arg_parser().parse_args()
+    SIMULATE = bool(args.simulate)
+    SERIAL_PORT = args.serial_port
+    BAUD_RATE = args.baud_rate
+
+    mode = "SIMULATION" if SIMULATE else f"SERIAL ({SERIAL_PORT} @ {BAUD_RATE})"
+    print(f"Starting MoodWave websocket server on ws://{args.host}:{args.port}/ws")
+    print(f"Mode: {mode}")
+
+    uvicorn.run(app, host=args.host, port=args.port)
+
+
+if __name__ == "__main__":
+    main()
