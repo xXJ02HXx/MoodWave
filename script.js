@@ -40,7 +40,7 @@ const labGoalValue     = document.getElementById("labGoalValue");
 const labMusicStyle    = document.getElementById("labMusicStyle");
 const labEnergy        = document.getElementById("labEnergy");
 const goalButtons      = document.querySelectorAll(".goal-btn");
-const presetButtons    = document.querySelectorAll(".preset-btn");
+const presetButtons   = document.querySelectorAll(".preset-card");
 
 // Music player
 const playerTrack  = document.getElementById("playerTrack");
@@ -54,6 +54,7 @@ const latestSensorValues = { temperature: 23, humidity: 48, sound: 40, brightnes
 const events = [];
 let selectedGoal   = "study";
 let showFahrenheit = false;
+const isTestLabPage = Boolean(document.getElementById("test-lab"));
 
 // ─────────────────────────────────────────────
 // TEMPERATURE HELPERS
@@ -206,6 +207,46 @@ function noiseLabel(value) {
   return "RAVE!";
 }
 
+function gradientTrack(inputEl, percent, active, rest) {
+  if (!inputEl) return;
+  inputEl.style.background = `linear-gradient(90deg, ${active} 0%, ${active} ${percent}%, ${rest} ${percent}%, ${rest} 100%)`;
+}
+
+function updateLabVisuals(temperature, light, noise) {
+  const tempPct = ((temperature - 0) / 50) * 100;
+  const noisePct = ((noise - 0) / 100) * 100;
+
+  if (labTemp) {
+    labTemp.style.background = "linear-gradient(90deg, #2a8bff 0%, #70dc8a 50%, #ea5a5a 100%)";
+  }
+  if (labLight) {
+    labLight.style.background = "linear-gradient(90deg, #f7fbff 0%, #fff3c4 55%, #ffd459 100%)";
+  }
+  gradientTrack(labNoise, noisePct, "#66d1ff", "#ff8f3f");
+
+  if (labTempDisplay) {
+    let tempColor = "#71cbff";
+    if (temperature <= 12) tempColor = "#5ca8ff";
+    else if (temperature >= 33) tempColor = "#ff6e58";
+    else if (temperature >= 21 && temperature <= 27) tempColor = "#7dff9a";
+    labTempDisplay.style.color = tempColor;
+  }
+
+  if (labLightValue) {
+    const warm = Math.min(255, Math.max(190, Math.round(190 + (light / 1000) * 65)));
+    labLightValue.style.color = `rgb(255, ${warm}, 120)`;
+  }
+
+  if (labNoiseValue) {
+    const quiet = noise <= 25;
+    const loud = noise >= 70;
+    labNoiseValue.style.textTransform = loud ? "uppercase" : "lowercase";
+    labNoiseValue.style.fontSize = quiet ? "0.78rem" : loud ? "1rem" : "0.88rem";
+    labNoiseValue.style.fontWeight = loud ? "800" : quiet ? "500" : "650";
+    labNoiseValue.style.letterSpacing = loud ? "0.04em" : "0.01em";
+  }
+}
+
 function generateMusicProfile(temperature, light, noise, humidity, goal) {
   const roomType = inferRoomCondition(temperature, humidity, noise, light);
   let title   = "Balanced Flow";
@@ -258,18 +299,19 @@ function updateLabOutput() {
   const profile     = generateMusicProfile(temperature, light, noise, humidity, selectedGoal);
 
   if (labTempDisplay)   labTempDisplay.textContent   = `${temperature}°C / ${fahr}°F`;
-  if (labLightValue)    labLightValue.textContent     = `${light} lux`;
-  if (labNoiseValue)    labNoiseValue.textContent     = noiseLabel(noise);
-  if (labHumidityValue) labHumidityValue.textContent  = `${humidity}%`;
-  if (labMusicTitle)    labMusicTitle.textContent     = profile.title;
-  if (labMusicSummary)  labMusicSummary.textContent   = profile.summary;
-  if (labRoomType)      labRoomType.textContent       = profile.roomType;
-  if (labGoalValue)     labGoalValue.textContent      = selectedGoal.charAt(0).toUpperCase() + selectedGoal.slice(1);
-  if (labMusicStyle)    labMusicStyle.textContent     = profile.style;
-  if (labEnergy)        labEnergy.textContent         = profile.energy;
+  if (labLightValue)   labLightValue.textContent   = `${light} lux`;
+  if (labNoiseValue)   labNoiseValue.textContent   = noiseLabel(noise);
+  if (labHumidityValue) labHumidityValue.textContent = `${humidity}%`;
+  if (labMusicTitle)    labMusicTitle.textContent    = profile.title;
+  if (labMusicSummary)  labMusicSummary.textContent  = profile.summary;
+  if (labRoomType)      labRoomType.textContent      = profile.roomType;
+  if (labGoalValue)     labGoalValue.textContent     = selectedGoal.charAt(0).toUpperCase() + selectedGoal.slice(1);
+  if (labMusicStyle)    labMusicStyle.textContent    = profile.style;
+  if (labEnergy)        labEnergy.textContent        = profile.energy;
+  updateLabVisuals(temperature, light, noise);
 
-  // Sync lab result to player label
-  if (playerTrack) playerTrack.textContent = `${profile.title} — ${profile.style}`;
+  // Sync lab result to player when in Test Lab
+  if (isTestLabPage && playerTrack) playerTrack.textContent = `${profile.title} — ${profile.style}`;
 }
 
 function applyPreset(presetName) {
@@ -304,21 +346,6 @@ function applyPreset(presetName) {
 // ─────────────────────────────────────────────
 // MUSIC PLAYER — Web Audio API with crossfade
 // ─────────────────────────────────────────────
-
-/*
-  File layout expected on the server:
-    /audio/focused-pulse.mp3
-    /audio/calm-drift.mp3
-    /audio/drive-mode.mp3
-    /audio/blue-hour.mp3
-    /audio/rain-logic.mp3
-    /audio/clear-signal.mp3
-    /audio/late-current.mp3
-    /audio/noon-charge.mp3
-
-  If a file is missing the player falls back gracefully —
-  it updates the label text only (placeholder mode).
-*/
 
 const TRACKS = 
 [
@@ -503,6 +530,7 @@ async function resumePlayer() {
 // Uses a 2-reading debounce so a single noisy spike doesn't
 // cause an unwanted crossfade.
 function updatePlayerTrack(mood, condition) {
+  if (isTestLabPage) return;
   const idx = CONDITION_TRACK_OVERRIDES[condition] ?? MOOD_TRACK_MAP[mood] ?? currentTrackIndex;
 
   // Always update the label when not actively playing
