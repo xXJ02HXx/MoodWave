@@ -381,6 +381,8 @@ function updateLabOutput() {
   if (labMusicStyle)    labMusicStyle.textContent     = profile.style;
   if (labEnergy)        labEnergy.textContent         = profile.energy;
   updateLabVisuals(temperature, light, noise);
+  updateReverbFromBrightness(light);
+
 
   if (isTestLabPage && playerTrack) playerTrack.textContent = trackLabel;
   if (isTestLabPage) syncTestLabTrack(trackIdx, profile.style);
